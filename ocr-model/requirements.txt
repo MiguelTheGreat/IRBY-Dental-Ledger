@@ -1,0 +1,7 @@
+# server.py and infer.py use only the Python standard library.
+# Add the packages your model needs, for example:
+#
+# pytesseract>=0.3.10   # + install the Tesseract binary (https://github.com/UB-Mannheim/tesseract/wiki on Windows)
+# pillow>=10.0
+# paddleocr>=2.7
+# torch / transformers / onnxruntime ...

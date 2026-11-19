@@ -1,0 +1,67 @@
+{
+  "name": "irby-dental-ledger",
+  "version": "1.0.0",
+  "description": "Digital Dental Chart & Records Management System (IRBY Dental Ledger) - single-clinic web app",
+  "private": true,
+  "type": "commonjs",
+  "main": "desktop/main.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
+    "desktop": "electron .",
+    "build:icons": "node scripts/make-icons.js",
+    "build:mac-app": "node scripts/build-mac-app.js",
+    "build:win-app": "node scripts/build-win-app.js",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "seed:demo": "node --disable-warning=ExperimentalWarning scripts/seed-demo.js",
+    "cert": "node scripts/make-cert.js",
+    "restore": "node --disable-warning=ExperimentalWarning scripts/restore-backup.js",
+    "bench": "node --disable-warning=ExperimentalWarning scripts/bench.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-include=server/** --test-coverage-exclude=server/index.js \"tests/*.test.js\"",
+    "test:critical": "node --disable-warning=ExperimentalWarning --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test-coverage-include=server/lib/money.js --test-coverage-include=server/lib/rbac.js tests/money.test.js tests/rbac.test.js",
+    "check": "npm run test:critical && npm test"
+  },
+  "build": {
+    "appId": "com.irbyclinic.dental-ledger",
+    "productName": "IRBY Dental Ledger",
+    "files": [
+      "desktop/**/*",
+      "server/**/*",
+      "public/**/*",
+      "config/**/*",
+      "build/icon.png",
+      "build/icon.ico",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.medical",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
+    "express": "^5.3.0",
+    "selfsigned": "^5.5.0"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}

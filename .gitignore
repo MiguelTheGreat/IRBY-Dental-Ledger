@@ -1,0 +1,12 @@
+node_modules/
+# Patient data, master key, certificates and backups - never commit
+data/
+.env
+*.db
+*.db-wal
+*.db-shm
+*.bak
+coverage/
+__pycache__/
+*.pyc
+android/app/build_cli/

@@ -1,0 +1,20 @@
+{
+  "name": "IRBY Dental Clinic",
+  "shortName": "IRBY Dental",
+  "address": "",
+  "phone": "",
+  "chart": {
+    "defaultNotation": "FDI",
+    "maxPhotoEdgePx": 2000,
+    "photoViews": [
+      { "id": "upper-occlusal", "label": "Upper occlusal" },
+      { "id": "lower-occlusal", "label": "Lower occlusal" },
+      { "id": "frontal", "label": "Frontal (smile)" },
+      { "id": "right-buccal", "label": "Right buccal" },
+      { "id": "left-buccal", "label": "Left buccal" },
+      { "id": "close-up", "label": "Tooth close-up" },
+      { "id": "radiograph", "label": "X-ray photo" },
+      { "id": "other", "label": "Other" }
+    ]
+  }
+}

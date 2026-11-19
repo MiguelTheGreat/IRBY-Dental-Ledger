@@ -1,0 +1,20 @@
+{
+  "note": "Example fee schedule used for ledger suggestions. Replace with the clinic's own procedures and fees (in pesos).",
+  "procedures": [
+    { "name": "Consultation & oral examination", "fee": 500 },
+    { "name": "Oral prophylaxis (cleaning)", "fee": 1200 },
+    { "name": "Composite restoration (per surface)", "fee": 2000 },
+    { "name": "Amalgam restoration (per surface)", "fee": 1500 },
+    { "name": "Pit and fissure sealant (per tooth)", "fee": 800 },
+    { "name": "Simple extraction", "fee": 1500 },
+    { "name": "Surgical extraction / odontectomy", "fee": 8000 },
+    { "name": "Root canal treatment (anterior)", "fee": 7000 },
+    { "name": "Root canal treatment (molar)", "fee": 12000 },
+    { "name": "Jacket crown (porcelain fused to metal)", "fee": 12000 },
+    { "name": "Removable partial denture", "fee": 9000 },
+    { "name": "Fluoride application", "fee": 800 },
+    { "name": "Periapical X-ray", "fee": 500 },
+    { "name": "Suture removal / post-op check", "fee": 0 },
+    { "name": "Payment on account", "fee": 0 }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "version": "2026.1",
+  "signoff": {
+    "status": "pending",
+    "note": "NFR-S3: confirm every entry against the PDA reference chart and record the licensed dentist's sign-off here before go-live.",
+    "dentist": "",
+    "prcLicenseNo": "",
+    "date": ""
+  },
+  "categories": [
+    { "id": "condition", "label": "Condition" },
+    { "id": "restoration", "label": "Restorations & Prosthetics" },
+    { "id": "surgery", "label": "Surgery" }
+  ],
+  "symbols": [
+    { "code": "D",   "name": "Decayed (caries, indicated for filling)", "category": "condition",   "scope": "surface", "shape": "circle",        "fill": "solid",      "color": "#C93B2B", "key": "1", "common": true },
+    { "code": "M",   "name": "Missing due to caries",                   "category": "condition",   "scope": "tooth",   "shape": "x",             "fill": "solid",      "color": "#1C1917", "key": "2", "common": true },
+    { "code": "MO",  "name": "Missing due to other causes",             "category": "condition",   "scope": "tooth",   "shape": "x",             "fill": "dashed",     "color": "#57524C" },
+    { "code": "Im",  "name": "Impacted tooth",                          "category": "condition",   "scope": "tooth",   "shape": "triangle-down", "fill": "outline",    "color": "#6B4FA0", "key": "9", "common": true },
+    { "code": "Sp",  "name": "Supernumerary tooth",                     "category": "condition",   "scope": "tooth",   "shape": "star",          "fill": "solid",      "color": "#8A5A00" },
+    { "code": "Rf",  "name": "Root fragment",                           "category": "condition",   "scope": "tooth",   "shape": "triangle",      "fill": "hatch",      "color": "#C93B2B", "key": "7", "common": true },
+    { "code": "Un",  "name": "Unerupted",                               "category": "condition",   "scope": "tooth",   "shape": "ring",          "fill": "dashed",     "color": "#57524C" },
+    { "code": "Am",  "name": "Amalgam filling",                         "category": "restoration", "scope": "surface", "shape": "square",        "fill": "crosshatch", "color": "#2B5B84", "key": "3", "common": true },
+    { "code": "Co",  "name": "Composite filling",                       "category": "restoration", "scope": "surface", "shape": "diamond",       "fill": "crosshatch", "color": "#2B5B84", "key": "4", "common": true },
+    { "code": "JC",  "name": "Jacket crown",                            "category": "restoration", "scope": "tooth",   "shape": "hexagon",       "fill": "outline",    "color": "#2B5B84", "key": "5", "common": true },
+    { "code": "Ab",  "name": "Abutment",                                "category": "restoration", "scope": "tooth",   "shape": "pentagon",      "fill": "outline",    "color": "#2B5B84" },
+    { "code": "Att", "name": "Attachment",                              "category": "restoration", "scope": "tooth",   "shape": "plus",          "fill": "solid",      "color": "#2B5B84" },
+    { "code": "P",   "name": "Pontic",                                  "category": "restoration", "scope": "tooth",   "shape": "bar",           "fill": "solid",      "color": "#2B5B84" },
+    { "code": "In",  "name": "Inlay",                                   "category": "restoration", "scope": "surface", "shape": "square-inset",  "fill": "solid",      "color": "#2B5B84" },
+    { "code": "Imp", "name": "Implant",                                 "category": "restoration", "scope": "tooth",   "shape": "octagon",       "fill": "solid",      "color": "#2B5B84" },
+    { "code": "S",   "name": "Sealant",                                 "category": "restoration", "scope": "surface", "shape": "circle",        "fill": "dots",       "color": "#0E7490", "key": "8", "common": true },
+    { "code": "Rm",  "name": "Removable denture",                       "category": "restoration", "scope": "tooth",   "shape": "ring-double",   "fill": "outline",    "color": "#2B5B84" },
+    { "code": "X",   "name": "Extraction due to caries",                "category": "surgery",     "scope": "tooth",   "shape": "x-circle",      "fill": "solid",      "color": "#C93B2B", "key": "6", "common": true },
+    { "code": "XO",  "name": "Extraction due to other causes",          "category": "surgery",     "scope": "tooth",   "shape": "x-square",      "fill": "solid",      "color": "#57524C" },
+    { "code": "✓",   "name": "Present tooth (sound)",                   "category": "condition",   "scope": "tooth",   "shape": "check",         "fill": "solid",      "color": "#286652" },
+    { "code": "F",   "name": "Filled",                                  "category": "condition",   "scope": "surface", "shape": "square",        "fill": "solid",      "color": "#C93B2B" },
+    { "code": "I",   "name": "Caries indicated for extraction",         "category": "condition",   "scope": "tooth",   "shape": "triangle",      "fill": "solid",      "color": "#C93B2B" },
+    { "code": "RF",  "name": "Root fragment",                           "category": "condition",   "scope": "tooth",   "shape": "triangle",      "fill": "hatch",      "color": "#C93B2B" },
+    { "code": "J",   "name": "Jacket crown",                            "category": "restoration", "scope": "tooth",   "shape": "hexagon",       "fill": "outline",    "color": "#2B5B84" },
+    { "code": "A",   "name": "Amalgam filling",                         "category": "restoration", "scope": "surface", "shape": "square",        "fill": "crosshatch", "color": "#2B5B84" },
+    { "code": "AB",  "name": "Abutment",                                "category": "restoration", "scope": "tooth",   "shape": "pentagon",      "fill": "outline",    "color": "#2B5B84" },
+    { "code": "Fx",  "name": "Fixed cure composite",                    "category": "restoration", "scope": "surface", "shape": "diamond",       "fill": "crosshatch", "color": "#2B5B84" },
+    { "code": "Cm",  "name": "Congenitally missing",                    "category": "surgery",     "scope": "tooth",   "shape": "ring",          "fill": "dashed",     "color": "#286652" }
+  ]
+}

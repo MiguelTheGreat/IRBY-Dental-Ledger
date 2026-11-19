@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3E2F27" />
+  <meta name="description" content="IRBY Dental Ledger - digital dental chart and records management" />
+  <title>IRBY Dental Ledger</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/fonts.css" />
+  <link rel="stylesheet" href="/css/app.css" />
+  <script type="module" src="/js/app.js"></script>
+</head>
+<body class="locked">
+
+  <div class="toast-bubble" id="toast" role="status" aria-live="polite">
+    <span id="toast-icon">✓</span>
+    <span id="toast-text"></span>
+  </div>
+
+  <!-- PHONE & TABLET DOCK -->
+  <nav class="mobile-dock" id="mobile-dock" aria-label="Main">
+    <div class="dock-track">
+      <span class="dock-indicator" aria-hidden="true"></span>
+      <button type="button" class="dock-btn active" data-nav="dashboard" aria-label="Home">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>
+        <span>Home</span>
+      </button>
+      <button type="button" class="dock-btn" data-nav="directory" aria-label="Patients">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <span>Patients</span>
+      </button>
+      <button type="button" class="dock-btn" data-nav="intake" aria-label="Intake">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        <span>Intake</span>
+      </button>
+      <button type="button" class="dock-btn" data-nav="chart" aria-label="Chart">
+        <svg viewBox="0 0 24 24"><path d="M7 3C4.5 3 3 5 3 8c0 2.5 1 4.5 2 7 1 2.5 1.5 6 3 6 1.2 0 1.8-3 4-3s2.8 3 4 3c1.5 0 2-3.5 3-6 1-2.5 2-4.5 2-7 0-3-1.5-5-4-5-2 0-3.5 1-5 1S9 3 7 3z"/></svg>
+        <span>Chart</span>
+      </button>
+      <button type="button" class="dock-btn" data-nav="ledger" aria-label="Ledger">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 15h4"/></svg>
+        <span>Ledger</span>
+      </button>
+      <button type="button" class="dock-btn" data-nav="security" aria-label="Security">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Security</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- LOGIN / FIRST-RUN SETUP -->
+  <section id="login-screen" class="hidden" aria-label="Sign in">
+    <form class="login-card" id="login-form" autocomplete="on" novalidate>
+      <div class="login-top-row">
+        <div class="login-brand">
+          <div class="brand-logo">IR</div>
+          <span style="font-weight: 800; font-size: 14px; color: var(--text-secondary);">Clinical Vault</span>
+        </div>
+        <div class="row" style="gap:6px;">
+          <button type="button" class="btn-secondary" data-action="show-lan" style="padding:4px 8px; font-size:11.5px; height:26px;">📱 Pair Devices</button>
+          <span class="server-status" id="login-server-status">Server</span>
+        </div>
+      </div>
+
+      <h1 id="login-title">IRBY Dental Ledger</h1>
+      <p class="login-sub" id="login-sub">Sign in with your clinic credentials to unlock patient charts and billing ledgers.</p>
+
+      <div class="login-error" id="login-error" hidden><span>⚠</span><span id="login-error-text"></span></div>
+
+      <div class="field" id="setup-name-field" hidden>
+        <div class="field-label"><span>Your name</span></div>
+        <input type="text" class="input" name="displayName" id="setup-display-name" placeholder="e.g. Dr. Ana Bautista" autocomplete="name" />
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Clinic account</span></div>
+        <input type="text" class="input" name="username" id="login-username" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+      </div>
+
+      <div class="field">
+        <div class="field-label"><span>Passphrase</span><span class="num muted" id="pw-hint">12+ characters</span></div>
+        <input type="password" class="input" name="password" id="login-password" autocomplete="current-password" required />
+      </div>
+
+      <div class="field" id="setup-confirm-field" hidden>
+        <div class="field-label"><span>Confirm passphrase</span></div>
+        <input type="password" class="input" name="confirm" id="setup-confirm" autocomplete="new-password" />
+      </div>
+
+      <button class="btn-primary" style="width: 100%; margin-top: 8px;" type="submit" id="login-submit">
+        <span id="login-submit-text">Unlock Ledger</span><span>→</span>
+      </button>
+    </form>
+  </section>
+
+  <!-- MAIN APPLICATION SHELL -->
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-header">
+          <div class="brand-logo">IR</div>
+          <div>
+            <div style="font-weight: 800; font-size: 15px;" id="brand-name">IRBY Dental</div>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Clinical Ledger</div>
+          </div>
+        </div>
+        <ul class="nav-list">
+          <li><button type="button" class="nav-item active" data-nav="dashboard">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>
+            <span>Dashboard</span></button></li>
+          <li><button type="button" class="nav-item" data-nav="directory">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <span>Directory</span></button></li>
+          <li><button type="button" class="nav-item" data-nav="intake">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+            <span>Intake</span></button></li>
+          <li><button type="button" class="nav-item" data-nav="chart">
+            <svg viewBox="0 0 24 24"><path d="M7 3C4.5 3 3 5 3 8c0 2.5 1 4.5 2 7 1 2.5 1.5 6 3 6 1.2 0 1.8-3 4-3s2.8 3 4 3c1.5 0 2-3.5 3-6 1-2.5 2-4.5 2-7 0-3-1.5-5-4-5-2 0-3.5 1-5 1S9 3 7 3z"/></svg>
+            <span>Dental Chart</span></button></li>
+          <li><button type="button" class="nav-item" data-nav="ledger">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 15h4"/></svg>
+            <span>Ledger</span></button></li>
+          <li><button type="button" class="nav-item" data-nav="security">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Security</span></button></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-notice" role="note" aria-label="Clinical use disclaimer" title="System is currently under testing and evaluation. Not authorized for primary clinical use or diagnostic records.">
+          <div class="sidebar-notice-header">
+            <svg viewBox="0 0 24 24" class="sidebar-notice-icon" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>Testing &amp; Evaluation</span>
+          </div>
+          <p class="sidebar-notice-body">
+            App not ready for clinical use. Still under active testing.
+          </p>
+        </div>
+
+        <button class="sidebar-pair-btn" type="button" data-action="show-lan" title="Show QR code &amp; LAN address for tablets and other PCs">
+          <svg viewBox="0 0 24 24" class="sidebar-pair-icon" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2"/>
+          </svg>
+          <span>Pair Devices</span>
+          <span class="sidebar-pair-tag">LAN</span>
+        </button>
+
+        <div class="sidebar-footer">
+          <div class="user-chip">
+            <div class="avatar" id="user-avatar">--</div>
+            <div style="min-width:0;">
+              <div class="user-chip-name" id="user-name">Signed out</div>
+              <div class="user-chip-role" id="user-role"></div>
+            </div>
+          </div>
+          <div class="row" style="justify-content: space-between; margin-top:4px; flex-wrap: nowrap;">
+            <span class="server-status" id="server-status" title="Local clinic server - no internet required">Local server</span>
+            <button class="btn-secondary" type="button" data-action="lock" style="padding:4px 10px; font-size:12px; height:28px;">Lock</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="patient-bar empty" id="patient-bar" aria-label="Active patient"></header>
+      <main class="stage" id="stage">
+        <section id="view-dashboard" class="view active" aria-label="Dashboard"></section>
+        <section id="view-directory" class="view" aria-label="Patient directory"></section>
+        <section id="view-intake" class="view" aria-label="Patient registration"></section>
+        <section id="view-chart" class="view" aria-label="Dental chart"></section>
+        <section id="view-ledger" class="view" aria-label="Ledger"></section>
+        <section id="view-security" class="view" aria-label="Security"></section>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-dialog" id="modal-dialog"></div>
+  </div>
+
+</body>
+</html>

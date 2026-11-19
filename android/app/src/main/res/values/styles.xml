@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.IRBYDentalLedger" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/espresso_dark</item>
+        <item name="colorPrimaryVariant">@color/espresso_header</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:statusBarColor">@color/espresso_header</item>
+        <item name="android:windowBackground">@color/ivory_bg</item>
+    </style>
+</resources>

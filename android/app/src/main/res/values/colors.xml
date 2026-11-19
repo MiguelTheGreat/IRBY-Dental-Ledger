@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="espresso_dark">#3E2F27</color>
+    <color name="espresso_header">#2E221C</color>
+    <color name="gold_accent">#D4A373</color>
+    <color name="ivory_bg">#F3EFEA</color>
+    <color name="text_main">#2A221D</color>
+</resources>
