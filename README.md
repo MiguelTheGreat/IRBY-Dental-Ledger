@@ -84,10 +84,10 @@ Open **http://localhost:3000**. On Windows you can double-click `start-clinic.ba
 | **Patient bar** (always on top) | Active patient's photo, name, record ID, age/sex, allergy alert, next visit, balance. *Switch Patient* asks for confirmation when there are unsaved edits | NFR-S2 |
 | **Dashboard** | Today's appointments, the **Due for Follow-Up** recall queue (overdue, due today, next 7 days) with procedure and contact number, allergy alerts, outstanding balances. Internal only; no SMS is sent | FR-6, TC-03 |
 | **Directory** | Typo-tolerant search by name or record ID (up to 2 typos). Sort by next appointment, last visit, balance, name or registration. Filters for follow-ups, balances and alerts. CSV/JSON export | FR-2 |
-| **Intake** | Registration with auto-calculated age, portrait capture (500 KB limit), mandatory consent, and an **OCR scan** that fills the form for staff review | FR-1, FR-8 |
-| **Dental Chart** | Photo-based chart with PDA symbols, FDI/Universal numbering, one-action undo, print/PDF | FR-3, FR-4 |
+| **Intake** | Full **Philippine Dental Association (PDA) Patient Information Record** (personal details, Dental History, Medical History Q1–Q12 Yes/No, allergy checklist, Q13 36-condition grid), auto-calculated age, portrait capture (500 KB limit), mandatory consent, and **OCR form scan** with staff review | FR-1, FR-8 |
+| **Dental Chart** | Interactive 52-tooth PDA Odontogram + photo-based chart with PDA symbols, FDI/Universal numbering, one-action undo, print/PDF | FR-3, FR-4 |
 | **Ledger** | Visit date, age at visit, procedure, fee, amount paid, balance (exact centavos), next return date, edit/void with audit, print/PDF | FR-5, FR-6 |
-| **Security** | Audit trail with tamper check, users, recently deleted (restore), export/import, encrypted backups, change password | NFR-SEC2, NFR-S2, NFR-PO2 |
+| **Security** | Secure connection & storage posture cards, live **Diagnostics & Watchdog** telemetry (3-state status LEDs, `ERR-*` codes, log viewer), audit trail with tamper check, users, recently deleted (restore), export/import, encrypted backups, change password | NFR-SEC2, NFR-S2, NFR-PO2 |
 
 The layout follows the original design: a card grid with a sidebar on desktop, a floating bottom dock on tablets and phones, and card-style table rows on phones.
 
@@ -130,28 +130,29 @@ Photo view types and the default numbering are set in `config/clinic.json`.
 
 ---
 
-## 5. OCR scanner – mounting your model
+## 5. OCR scanner – Keras Document Classifier + EasyOCR (automatic startup)
 
-The Intake screen's **Scan Paper Form (OCR)** captures the paper registration form, sends it to the configured provider, and fills the form. Every filled field is highlighted, marked **Auto-filled · confidence %**, and must be **edited or confirmed** before *Save* is allowed (NFR-S5). The scanned image is not stored.
+The Intake screen's **Scan Paper Form (OCR)** captures the paper **Philippine Dental Association (PDA) Dental Chart — Patient Information Record**, classifies the document using `ocr-model/doc_classifier_frozen_easyocr.keras` (EfficientNetB0 + frozen EasyOCR 256-dim visual-text features across `["document", "form", "invoice", "real_life"]`), extracts structured fields + circled `Sex (M/F)` + circled `Yes/No` answers + Q8/Q13 checkboxes via EasyOCR & OpenCV ink analysis, and populates the Intake form. Every filled field is highlighted, marked **Auto-filled · confidence %**, and must be **edited or confirmed** before *Save* is allowed (NFR-S5). The scanned image is never stored.
 
-Switch providers with one `.env` setting:
+### Automatic sidecar startup
+When `OCR_PROVIDER=http` targets `127.0.0.1` / `localhost` (default in `.env`), **IRBY Dental Ledger automatically starts `ocr-model/server.py` silently in the background** when the app opens and stops it cleanly on exit (`server/ocr/autostart.js`). Clinic staff never need to launch a separate terminal or script.
+
+Install the Python dependencies once on the clinic PC:
+
+```bash
+pip install -r ocr-model/requirements.txt
+```
+
+Switch providers with one `.env` setting if needed:
 
 | `OCR_PROVIDER` | Use when | Mount by |
 |---|---|---|
-| `mock` *(default)* | Demo / UI testing | – |
-| `http` | Model runs as a service (recommended) | edit `ocr-model/model.py`, run `python ocr-model/server.py`, set `OCR_HTTP_URL` |
-| `command` | One script per scan | edit `ocr-model/model.py`, `OCR_COMMAND=python ocr-model/infer.py {image}` |
-| `module` | Model runs in Node (tesseract.js, onnxruntime-node, cloud SDK) | copy `ocr-model/js-provider.example.js`, set `OCR_MODULE` |
+| `http` *(default)* | Built-in Keras + EasyOCR model server (auto-started) | `ocr-model/model.py` + `ocr-model/doc_classifier_frozen_easyocr.keras` |
+| `mock` | Demo / UI testing without Python | – |
+| `command` | One-shot script per scan | `OCR_COMMAND=python ocr-model/infer.py {image}` |
+| `module` | Model runs in Node (`tesseract.js`, `onnxruntime-node`, etc.) | copy `ocr-model/js-provider.example.js`, set `OCR_MODULE` |
 
-**Fastest path for a Python model.** Put your inference code in `predict(image_bytes)` in [`ocr-model/model.py`](ocr-model/model.py), then start the wrapper:
-
-```bash
-python ocr-model/server.py
-```
-
-Then set `OCR_PROVIDER=http` in `.env` and restart. The OCR card shows **ready** once `/health` answers.
-
-Your model may return **raw text** (the app extracts *Last Name:*, *Birthdate:*, *Sex:*, *Address:*, *Contact No:*, *Allergies:*, including Filipino labels), **structured fields**, or **fields with per-field confidence**. Dates, sex values and full names (e.g. "Dela Cruz, Mateo L.") are normalised automatically. The full contract and accuracy-testing notes are in [ocr-model/README.md](ocr-model/README.md). Scans time out after `OCR_TIMEOUT_MS` (10 s, NFR-P7).
+Dates, sex values, full names (e.g. "Dela Cruz, Mateo L."), dental history, and medical history checkboxes are normalised automatically. The full contract and accuracy-testing notes are in [ocr-model/README.md](ocr-model/README.md). Scans time out after `OCR_TIMEOUT_MS` (`30000` ms default in `.env` for CPU EasyOCR inference).
 
 ---
 

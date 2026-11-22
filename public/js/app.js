@@ -29,20 +29,43 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-// ------------------------------------------------------------------ server status (no internet required)
+// ------------------------------------------------------------------ server status LED (3-state: Healthy / Degraded / Critical)
 let serverUp = true;
 async function pingServer() {
+  let stateName = 'CRITICAL';
+  let code = 'ERR-NET-005';
+  let reachable = false;
   try {
     const r = await fetch('/api/health', { cache: 'no-store' });
-    serverUp = r.ok;
-  } catch { serverUp = false; }
+    const data = await r.json().catch(() => ({}));
+    reachable = true;
+    stateName = data.status || (r.ok ? 'HEALTHY' : 'CRITICAL');
+    code = data.code || (r.ok ? 'OK' : 'ERR-SYS-500');
+    serverUp = stateName !== 'CRITICAL' && r.ok;
+  } catch {
+    serverUp = false;
+    reachable = false;
+    stateName = 'CRITICAL';
+    code = 'ERR-NET-005';
+  }
   for (const el of [$('#server-status'), $('#login-server-status')]) {
-    el.classList.toggle('offline', !serverUp);
-    el.textContent = serverUp ? 'Local server' : 'Server unreachable';
+    if (!el) continue;
+    el.classList.toggle('offline', stateName === 'CRITICAL');
+    el.classList.toggle('degraded', stateName === 'DEGRADED');
+    if (stateName === 'HEALTHY') {
+      el.textContent = 'Local server';
+      el.title = 'Local clinic server nominal (OK) — click to open Diagnostics';
+    } else if (stateName === 'DEGRADED') {
+      el.textContent = `Degraded · ${code}`;
+      el.title = `System degraded (${code}) — click to inspect Diagnostics`;
+    } else {
+      el.textContent = reachable ? `Critical · ${code}` : `${code} · Offline`;
+      el.title = `Critical fault (${code}) — click to inspect Diagnostics`;
+    }
   }
 }
 pingServer();
-setInterval(pingServer, 20000);
+setInterval(pingServer, 5000);
 
 // ------------------------------------------------------------------ sign in / setup
 let setupMode = false;
@@ -231,6 +254,9 @@ on('patient:updated', renderPatientBar);
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-action="switch-patient"]')) openSwitcher();
   if (e.target.closest('[data-action="show-lan"]')) openPairingModal();
+  if (e.target.closest('#server-status') && state.user) {
+    location.hash = '#/security?tab=diagnostics';
+  }
 });
 
 async function openPairingModal() {

@@ -48,7 +48,8 @@ function createOcr(ocrConfig, root) {
     name,
     description: provider.description,
     async status() {
-      if (Date.now() - statusCache.at < 15000 && statusCache.value) return statusCache.value;
+      const ttl = statusCache.value && statusCache.value.ready ? 15000 : 2000;
+      if (Date.now() - statusCache.at < ttl && statusCache.value) return statusCache.value;
       let value;
       try {
         value = provider.status ? await provider.status() : { ready: true };

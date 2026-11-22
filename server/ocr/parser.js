@@ -11,9 +11,32 @@ const FIELD_LABELS = {
   dateOfBirth: ['date of birth', 'birth date', 'birthdate', 'birthday', 'b-day', 'bday', 'dob', 'kaarawan', 'petsa ng kapanganakan'],
   age: ['age', 'edad'],
   sex: ['sex', 'gender', 'kasarian'],
+  nickname: ['nickname'],
+  religion: ['religion'],
+  nationality: ['nationality'],
   address: ['home address', 'residential address', 'present address', 'address', 'tirahan'],
-  contactNumber: ['contact number', 'contact no', 'contact #', 'mobile number', 'mobile no', 'cellphone number', 'cellphone no',
+  homeNo: ['home no', 'home number', 'home phone'],
+  occupation: ['occupation'],
+  officeNo: ['office no', 'office number'],
+  faxNo: ['fax no', 'fax number', 'fax'],
+  dentalInsurance: ['dental insurance', 'insurance'],
+  effectiveDate: ['effective date'],
+  contactNumber: ['cel/mobile no', 'cel/mobile', 'contact number', 'contact no', 'contact #', 'mobile number', 'mobile no', 'cellphone number', 'cellphone no',
     'cell no', 'cp no', 'phone number', 'phone', 'telephone', 'tel no', 'contact'],
+  email: ['email add', 'email address', 'e-mail', 'email'],
+  guardianName: ["parent/guardian's name", 'parent/guardian name', 'guardian name'],
+  guardianOccupation: ['guardian occupation'],
+  referredBy: ['whom may we thank for referring you', 'referred by'],
+  consultationReason: ['what is your reason for dental consultation', 'reason for dental consultation', 'consultation reason'],
+  previousDentist: ['previous dentist'],
+  lastDentalVisit: ['last dental visit'],
+  physicianName: ['name of physician', 'physician name'],
+  physicianSpecialty: ['specialty, if applicable', 'physician specialty', 'specialty'],
+  physicianAddress: ['physician address', 'physician office address'],
+  physicianPhone: ['physician phone', 'physician number'],
+  bleedingTime: ['bleeding time'],
+  bloodType: ['blood type'],
+  bloodPressure: ['blood pressure'],
   allergies: ['allergies', 'allergy', 'allergic to', 'medical alerts', 'medical alert'],
   registrationDate: ['date of registration', 'registration date', 'date registered', 'date'],
 };
@@ -147,13 +170,44 @@ const ALIASES = {
   fullName: ['fullName', 'full_name', 'name', 'patient_name'],
   dateOfBirth: ['dateOfBirth', 'date_of_birth', 'dob', 'birthdate', 'birth_date', 'birthday'],
   sex: ['sex', 'gender'],
+  nickname: ['nickname'],
+  religion: ['religion'],
+  nationality: ['nationality'],
   address: ['address', 'home_address', 'residential_address'],
+  homeNo: ['homeNo', 'home_no', 'home_phone'],
+  occupation: ['occupation'],
+  officeNo: ['officeNo', 'office_no', 'office_phone'],
+  faxNo: ['faxNo', 'fax_no', 'fax'],
+  dentalInsurance: ['dentalInsurance', 'dental_insurance', 'insurance'],
+  effectiveDate: ['effectiveDate', 'effective_date'],
   contactNumber: ['contactNumber', 'contact_number', 'contact', 'phone', 'mobile', 'mobile_number'],
+  email: ['email', 'email_add', 'email_address'],
+  guardianName: ['guardianName', 'guardian_name', 'parent_guardian_name'],
+  guardianOccupation: ['guardianOccupation', 'guardian_occupation'],
+  referredBy: ['referredBy', 'referred_by'],
+  consultationReason: ['consultationReason', 'consultation_reason', 'reason_for_consultation'],
+  previousDentist: ['previousDentist', 'previous_dentist'],
+  lastDentalVisit: ['lastDentalVisit', 'last_dental_visit'],
+  physicianName: ['physicianName', 'physician_name'],
+  physicianSpecialty: ['physicianSpecialty', 'physician_specialty', 'specialty'],
+  physicianAddress: ['physicianAddress', 'physician_address'],
+  physicianPhone: ['physicianPhone', 'physician_phone'],
+  bleedingTime: ['bleedingTime', 'bleeding_time'],
+  bloodType: ['bloodType', 'blood_type'],
+  bloodPressure: ['bloodPressure', 'blood_pressure'],
   allergies: ['allergies', 'allergy', 'medical_alerts'],
   registrationDate: ['registrationDate', 'registration_date', 'date_registered'],
 };
 
 const FORM_FIELDS = ['lastName', 'firstName', 'middleName', 'dateOfBirth', 'sex', 'address', 'contactNumber', 'allergies', 'registrationDate'];
+const PDA_FIELDS = [
+  'nickname', 'religion', 'nationality', 'occupation', 'homeNo', 'officeNo', 'faxNo',
+  'dentalInsurance', 'effectiveDate', 'email', 'guardianName', 'guardianOccupation',
+  'referredBy', 'consultationReason', 'previousDentist', 'lastDentalVisit',
+  'physicianName', 'physicianSpecialty', 'physicianAddress', 'physicianPhone',
+  'bleedingTime', 'bloodType', 'bloodPressure',
+];
+const ALL_FIELDS = [...FORM_FIELDS, ...PDA_FIELDS];
 
 function pickAliases(obj) {
   const out = {};
@@ -168,7 +222,7 @@ function pickAliases(obj) {
   return out;
 }
 
-/** Normalize any provider output into { fields, confidence, text }. */
+/** Normalize any provider output into { fields, confidence, text, [medicalHistory], [documentType], [documentConfidence] }. */
 function normalizeResult(raw) {
   const result = typeof raw === 'string' ? { text: raw } : (raw || {});
   const text = typeof result.text === 'string' ? result.text
@@ -191,10 +245,10 @@ function normalizeResult(raw) {
     for (const k of ['lastName', 'firstName', 'middleName']) if (!merged[k] && split[k]) merged[k] = split[k];
   }
   const fields = {};
-  for (const f of FORM_FIELDS) {
+  for (const f of ALL_FIELDS) {
     if (merged[f] == null || String(merged[f]).trim() === '') continue;
     let v = clean(merged[f]);
-    if (f === 'dateOfBirth' || f === 'registrationDate') v = parseDate(v) || '';
+    if (f === 'dateOfBirth' || f === 'registrationDate' || f === 'effectiveDate') v = parseDate(v) || '';
     if (f === 'sex') v = parseSex(v);
     if (f === 'middleName') v = v.replace(/\.$/, '');
     if (['lastName', 'firstName', 'middleName'].includes(f) && v === v.toUpperCase()) v = titleCase(v);
@@ -209,7 +263,17 @@ function normalizeResult(raw) {
     if (confidence[f] == null && overall != null) confidence[f] = overall;
     if (confidence[f] != null) confidence[f] = Math.max(0, Math.min(1, confidence[f] > 1 ? confidence[f] / 100 : confidence[f]));
   }
-  return { fields, confidence, text };
+  const out = { fields, confidence, text };
+  if (result.medicalHistory && typeof result.medicalHistory === 'object') {
+    out.medicalHistory = result.medicalHistory;
+  }
+  if (typeof result.documentType === 'string' && result.documentType) {
+    out.documentType = result.documentType;
+  }
+  if (typeof result.documentConfidence === 'number') {
+    out.documentConfidence = Math.max(0, Math.min(1, result.documentConfidence > 1 ? result.documentConfidence / 100 : result.documentConfidence));
+  }
+  return out;
 }
 
-module.exports = { parseRegistrationText, normalizeResult, parseDate, parseSex, splitFullName, FORM_FIELDS };
+module.exports = { parseRegistrationText, normalizeResult, parseDate, parseSex, splitFullName, FORM_FIELDS, PDA_FIELDS };

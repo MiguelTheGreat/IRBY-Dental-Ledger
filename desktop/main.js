@@ -9,11 +9,13 @@ const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron')
 
 const ROOT = path.resolve(__dirname, '..');
 const { createApp } = require(path.join(ROOT, 'server', 'app'));
+const { startOcrSidecar } = require(path.join(ROOT, 'server', 'ocr', 'autostart'));
 
 let mainWindow = null;
 let serverInstance = null;
 let appContext = null;
 let closeDb = null;
+let ocrSidecar = null;
 let housekeepingTimer = null;
 let activePort = 3000;
 
@@ -59,6 +61,7 @@ async function startBackend() {
   const { config, services } = appContext;
   serverInstance = await listenWithFallback(created.app, config.port, config.host);
   activePort = serverInstance.address().port;
+  ocrSidecar = startOcrSidecar(appContext);
 
   const housekeeping = () => {
     try {
@@ -257,6 +260,9 @@ if (!gotLock) {
 
   app.on('before-quit', () => {
     if (housekeepingTimer) clearInterval(housekeepingTimer);
+    if (ocrSidecar) {
+      try { ocrSidecar.stop(); } catch { /* ignore */ }
+    }
     if (serverInstance) {
       try { serverInstance.close(); } catch { /* ignore */ }
     }

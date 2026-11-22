@@ -9,6 +9,7 @@ const { loadConfig } = require('./config');
 const { openDatabase } = require('./db');
 const { Vault, loadOrCreateMasterKey } = require('./lib/crypto');
 const { AuditLog } = require('./lib/audit');
+const { DiagnosticsService } = require('./lib/diagnostics');
 const { loadClinicConfig } = require('./lib/clinicConfig');
 const { HttpError } = require('./lib/errors');
 const { createOcr } = require('./ocr');
@@ -63,6 +64,9 @@ function createApp(options = {}) {
   s.backup = new BackupService(ctx);
   s.patients.load();
 
+  ctx.diagnostics = new DiagnosticsService(ctx);
+  ctx.diagnostics.runChecks({ reason: 'boot', silent: true });
+
   const app = express();
   app.disable('x-powered-by');
   app.use(securityHeaders);
@@ -73,7 +77,10 @@ function createApp(options = {}) {
   api.use((req, res, next) => (req.path === '/import' ? next() : smallJson(req, res, next)));
   api.use((req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   api.use(csrfGuard);
-  api.get('/health', (req, res) => res.json({ ok: true, time: Date.now(), version: config.version }));
+  api.get('/health', (req, res) => {
+    const h = ctx.diagnostics.getHealthSummary();
+    res.json({ ...h, time: Date.now(), version: config.version });
+  });
   api.get('/lan-info', (req, res) => {
     const os = require('node:os');
     const ips = Object.values(os.networkInterfaces()).flat()
@@ -96,6 +103,9 @@ function createApp(options = {}) {
   // eslint-disable-next-line no-unused-vars
   api.use((err, req, res, next) => {
     if (err instanceof HttpError || (err && err.status && err.code)) {
+      if (err.code === 'OCR_TIMEOUT' || err.code === 'OCR_FAILED') {
+        ctx.diagnostics.log('WARN', 'ERR-OCR-007', 'ocr', err.message, { path: req.originalUrl });
+      }
       return res.status(err.status).json({ error: err.code, message: err.message, ...(err.extra || {}) });
     }
     if (err && err.type === 'entity.too.large') {
@@ -104,6 +114,7 @@ function createApp(options = {}) {
     if (err && err.type === 'entity.parse.failed') {
       return res.status(400).json({ error: 'BAD_JSON', message: 'Malformed JSON body.' });
     }
+    ctx.diagnostics.log('ERROR', 'ERR-SYS-500', 'runtime', `${req.method} ${req.originalUrl}: ${err && err.message ? err.message : 'Unexpected server error'}`);
     console.error('[api]', req.method, req.originalUrl, err);
     res.status(500).json({ error: 'SERVER_ERROR', message: 'Unexpected server error. The incident was logged.' });
   });
@@ -121,7 +132,10 @@ function createApp(options = {}) {
   return {
     app,
     ctx,
-    close() { try { db.close(); } catch { /* already closed */ } },
+    close() {
+      try { ctx.diagnostics.stopWatchdog(); } catch { /* ignore */ }
+      try { db.close(); } catch { /* already closed */ }
+    },
   };
 }
 

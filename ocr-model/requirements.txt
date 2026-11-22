@@ -1,7 +1,8 @@
-# server.py and infer.py use only the Python standard library.
-# Add the packages your model needs, for example:
-#
-# pytesseract>=0.3.10   # + install the Tesseract binary (https://github.com/UB-Mannheim/tesseract/wiki on Windows)
-# pillow>=10.0
-# paddleocr>=2.7
-# torch / transformers / onnxruntime ...
+# IRBY Dental Ledger OCR Model dependencies
+# Used by ocr-model/server.py (OCR_PROVIDER=http) and ocr-model/infer.py (OCR_PROVIDER=command)
+easyocr>=1.7.0
+keras>=3.0.0
+tensorflow>=2.16.0
+opencv-python>=4.9.0
+pillow>=10.0.0
+numpy>=1.26.0

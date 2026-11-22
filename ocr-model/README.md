@@ -11,16 +11,17 @@ the registration form. Staff must review every auto-filled field before saving (
 | `command` | Simple script, loaded per scan | `ocr-model/model.py` |
 | `module` | Model runs in Node.js (tesseract.js, onnxruntime-node, cloud SDK) | copy `js-provider.example.js` |
 
-## Quick start (Python model)
+## Quick start (Built-in Keras + EasyOCR model)
 
-1. Put your inference code in **`model.py`** → `load()` and `predict(image_bytes) -> dict`.
-2. Start the wrapper: `python ocr-model/server.py` (port 8765).
-3. In `.env`:
+`ocr-model/model.py` ships pre-wired with `doc_classifier_frozen_easyocr.keras`, `doc_class_names.json`, and EasyOCR for the **Philippine Dental Association (PDA) Dental Chart — Patient Information Record**.
+
+1. Install Python dependencies once:
+   ```bash
+   pip install -r ocr-model/requirements.txt
    ```
-   OCR_PROVIDER=http
-   OCR_HTTP_URL=http://127.0.0.1:8765/predict
-   ```
-4. Restart the web app. The OCR card on the Intake screen shows **ready** when `/health` answers.
+2. Launch IRBY Dental Ledger normally (`start-clinic.bat`, `npm start`, or `IRBY Dental Ledger.exe`).
+   When `.env` has `OCR_PROVIDER=http` pointing to `127.0.0.1:8765`, **`server/ocr/autostart.js` automatically starts `ocr-model/server.py` silently in the background** and shuts it down on exit.
+3. The OCR card on the Intake screen switches to **ready** automatically once `/health` answers.
 
 ## Output contract
 

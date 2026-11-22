@@ -10,7 +10,65 @@ const { buildIndex, score } = require('../lib/fuzzy');
 const { decodeDataUrl } = require('../lib/images');
 
 const SEXES = ['Male', 'Female', 'Other'];
+const ALLERGY_LABELS = {
+  localAnesthetic: 'Local Anesthetic (ex. Lidocaine)',
+  penicillin: 'Penicillin / Antibiotics',
+  sulfaDrugs: 'Sulfa drugs',
+  aspirin: 'Aspirin',
+  latex: 'Latex',
+  other: 'Other',
+};
 const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
+
+function sanitizeDentalHistory(dh) {
+  if (!dh || typeof dh !== 'object') return undefined;
+  const out = {
+    previousDentist: str(dh.previousDentist).slice(0, 120),
+    lastDentalVisit: str(dh.lastDentalVisit).slice(0, 80),
+  };
+  return (out.previousDentist || out.lastDentalVisit) ? out : undefined;
+}
+
+function sanitizeMedicalHistory(mh) {
+  if (!mh || typeof mh !== 'object') return undefined;
+  const out = {};
+  const textKeys = [
+    'physicianName', 'physicianSpecialty', 'physicianAddress', 'physicianPhone',
+    'bleedingTime', 'bloodType', 'bloodPressure', 'allergyOther', 'conditionOther',
+  ];
+  for (const k of textKeys) {
+    const v = str(mh[k]).slice(0, 200);
+    if (v) out[k] = v;
+  }
+  if (mh.questions && typeof mh.questions === 'object') {
+    const q = {};
+    const boolKeys = [
+      'goodHealth', 'underMedicalTreatment', 'seriousIllness', 'hospitalized',
+      'takingMedication', 'usesTobacco', 'usesAlcoholDrugs', 'allergic',
+      'pregnant', 'nursing', 'birthControl',
+    ];
+    for (const k of boolKeys) {
+      if (typeof mh.questions[k] === 'boolean') q[k] = mh.questions[k];
+    }
+    const detailKeys = [
+      'medicalTreatmentCondition', 'seriousIllnessDetails', 'hospitalizedDetails', 'medicationDetails',
+    ];
+    for (const k of detailKeys) {
+      const v = str(mh.questions[k]).slice(0, 240);
+      if (v) q[k] = v;
+    }
+    if (Object.keys(q).length) out.questions = q;
+  }
+  if (Array.isArray(mh.allergyItems)) {
+    const items = [...new Set(mh.allergyItems.map((x) => str(x)).filter((x) => x in ALLERGY_LABELS))];
+    if (items.length) out.allergyItems = items;
+  }
+  if (Array.isArray(mh.conditions)) {
+    const conds = [...new Set(mh.conditions.map((x) => str(x).slice(0, 60)).filter(Boolean))].slice(0, 40);
+    if (conds.length) out.conditions = conds;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 function displayName(p) {
   const mi = p.middleName ? `${p.middleName.trim()[0].toUpperCase()}. ` : '';
@@ -113,6 +171,37 @@ class PatientService {
       contactNumber: str(input.contactNumber),
       allergies: str(input.allergies),
     };
+    // Optional PDA Patient Information Record fields
+    const optionalText = {
+      nickname: 80, religion: 80, nationality: 80, occupation: 120,
+      homeNo: 40, officeNo: 40, faxNo: 40, email: 120,
+      dentalInsurance: 120, effectiveDate: 20,
+      guardianName: 120, guardianOccupation: 120,
+      referredBy: 120, consultationReason: 300,
+    };
+    for (const [k, maxLen] of Object.entries(optionalText)) {
+      const v = str(input[k]);
+      if (v) {
+        p[k] = v;
+        if (v.length > maxLen) c.fail(k, `Must be ${maxLen} characters or fewer.`);
+      }
+    }
+    if (p.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) c.fail('email', 'Enter a valid email address.');
+    if (p.effectiveDate && !isValidISODate(p.effectiveDate)) c.fail('effectiveDate', 'Enter a valid effective date.');
+
+    const dentalHistory = sanitizeDentalHistory(input.dentalHistory);
+    if (dentalHistory) p.dentalHistory = dentalHistory;
+    const medicalHistory = sanitizeMedicalHistory(input.medicalHistory);
+    if (medicalHistory) p.medicalHistory = medicalHistory;
+
+    // Keep core allergies summary synced if allergy checkboxes are selected
+    if (!p.allergies && medicalHistory && medicalHistory.allergyItems && medicalHistory.allergyItems.length) {
+      const parts = medicalHistory.allergyItems
+        .map((k) => (k === 'other' && medicalHistory.allergyOther ? medicalHistory.allergyOther : ALLERGY_LABELS[k]))
+        .filter(Boolean);
+      p.allergies = parts.join(', ').slice(0, 300);
+    }
+
     if (!p.lastName) c.fail('lastName', 'Last name is required.');
     if (!p.firstName) c.fail('firstName', 'First name is required.');
     for (const f of ['lastName', 'firstName', 'middleName']) if (p[f].length > 80) c.fail(f, 'Must be 80 characters or fewer.');
@@ -199,7 +288,8 @@ class PatientService {
     if (!hasCurrentConsent && !consent) c.fail('consent', `Consent version ${currentVersion} must be verified before saving.`);
     const portrait = this.decodePortrait(input.portrait, c);
     c.throwIfAny();
-    const changed = Object.keys(profile).filter((k) => (entry.profile[k] || '') !== profile[k]);
+    const allKeys = new Set([...Object.keys(entry.profile), ...Object.keys(profile)]);
+    const changed = [...allKeys].filter((k) => JSON.stringify(entry.profile[k] ?? '') !== JSON.stringify(profile[k] ?? ''));
     if (registeredOn !== entry.registeredOn) changed.push('registrationDate');
     const now = Date.now();
     transaction(this.db, () => {

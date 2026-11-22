@@ -95,6 +95,7 @@ class AuthService {
         const until = now + this.sec.lockoutMinutes * 60 * 1000;
         this.db.prepare('UPDATE users SET failed_attempts = 0, locked_until = ?, updated_at = ? WHERE id = ?').run(until, now, row.id);
         this.ctx.audit.append({ user: actor, ip, action: 'LOCKOUT', entity: 'user', entityId: row.id, details: { attempts, lockedUntil: until } });
+        this.ctx.diagnostics?.log('WARN', 'ERR-AUTH-004', 'auth', `Account "${row.username}" locked for ${this.sec.lockoutMinutes}m after ${attempts} failed attempts`);
         throw new HttpError(423, 'ACCOUNT_LOCKED', this.lockMessage(until), { lockedUntil: until });
       }
       this.db.prepare('UPDATE users SET failed_attempts = ?, updated_at = ? WHERE id = ?').run(attempts, now, row.id);
@@ -201,7 +202,9 @@ class AuthService {
     const { changes } = this.db.prepare('UPDATE users SET failed_attempts = 0, locked_until = NULL, updated_at = ? WHERE id = ?').run(Date.now(), id);
     if (!changes) throw new HttpError(404, 'NOT_FOUND', 'User not found.');
     this.ctx.audit.append({ user: actor, ip: actor.ip, action: 'UNLOCK', entity: 'user', entityId: id });
-    return this.getUser(id);
+    const unlocked = this.getUser(id);
+    this.ctx.diagnostics?.log('INFO', 'OK', 'auth', `Account "${unlocked.username}" unlocked by ${actor ? actor.username : 'admin'}`);
+    return unlocked;
   }
 
   purgeExpiredSessions() {

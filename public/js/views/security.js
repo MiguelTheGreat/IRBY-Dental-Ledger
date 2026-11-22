@@ -9,9 +9,11 @@ let root;
 let tab = null;
 let auditEntries = [];
 let auditFilter = { action: '', patientId: '' };
+let diagFilter = '';
 
 const TABS = [
   { id: 'audit', label: 'Audit trail', perm: 'audit.read' },
+  { id: 'diagnostics', label: 'Diagnostics', perm: 'audit.read' },
   { id: 'users', label: 'Users', perm: 'users.manage' },
   { id: 'trash', label: 'Recently deleted', perm: 'trash.read' },
   { id: 'data', label: 'Data & backups', perm: 'data.export' },
@@ -128,6 +130,7 @@ async function renderTab() {
   panel.innerHTML = String(html`<div class="card"><div class="empty-state"><span class="spinner"></span></div></div>`);
   try {
     if (tab === 'audit') await renderAudit(panel, true);
+    else if (tab === 'diagnostics') await renderDiagnostics(panel);
     else if (tab === 'users') await renderUsers(panel);
     else if (tab === 'trash') await renderTrash(panel);
     else if (tab === 'data') await renderData(panel);
@@ -201,6 +204,96 @@ async function renderAudit(panel, reset) {
       ${auditEntries.length >= 100 ? html`<div class="table-foot"><button class="btn-secondary tall" data-action="audit-more">Load older entries</button></div>` : ''}`
     : html`<div class="empty-state"><p>No audit entries match.</p></div>`}
   </div>`);
+}
+
+// ------------------------------------------------------------------ diagnostics
+function diagLevelBadge(level) {
+  const cls = { CRITICAL: 'red', ERROR: 'red', WARN: 'amber', INFO: 'green' }[level] || 'warm';
+  return html`<span class="badge ${cls}">${level}</span>`;
+}
+
+function renderDiagnosticsHtml(data) {
+  const snap = data.snapshot;
+  const logs = data.logs || [];
+  const catalog = data.catalog || [];
+  const bannerCls = snap.status === 'HEALTHY' ? 'ok' : snap.status === 'DEGRADED' ? 'warn' : 'err';
+  const checks = Object.values(snap.checks || {});
+  return html`
+    <div class="card">
+      <div class="diag-banner ${bannerCls}">
+        <div class="row" style="align-items:center; gap:12px;">
+          <span class="led-dot ${bannerCls}" aria-hidden="true"></span>
+          <div>
+            <div style="font-weight:800; font-size:15px;">System Watchdog: ${snap.status} <span class="err-pill ${bannerCls} num">${snap.code}</span></div>
+            <div class="small muted">Last watchdog sweep: ${fmt.dateTime(snap.checkedAt)} · Uptime: <span class="num">${snap.uptimeSec}s</span> · Log: <span class="num">${snap.logFile}</span></div>
+          </div>
+        </div>
+        <div class="row" style="gap:8px;">
+          <button type="button" class="btn-primary" data-action="diag-selftest">Run Self-Test</button>
+          <button type="button" class="btn-secondary tall" data-action="diag-log">Download Log</button>
+        </div>
+      </div>
+
+      <div class="diag-grid">
+        ${checks.map((c) => {
+          const ledState = c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'err';
+          const stateText = c.status === 'ok' ? 'Nominal' : c.status === 'warn' ? 'Degraded' : 'Fault';
+          return html`<div class="diag-card ${ledState}">
+            <div class="diag-card-top">
+              <span class="row" style="gap:8px; align-items:center;"><span class="led-dot sm ${ledState}"></span><strong>${c.name}</strong></span>
+              <span class="err-pill ${ledState} num">${c.code}</span>
+            </div>
+            <div class="diag-card-metric num">${stateText} · ${c.metric}</div>
+            <div class="diag-card-detail">${c.detail}</div>
+          </div>`;
+        })}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div><h3>Diagnostic Event Log (Zero-PHI)</h3><span class="card-sub">Rotating JSON-Lines stream at <span class="num">data/logs/diagnostics.log</span> (15 s watchdog + fault hooks).</span></div>
+        <div class="row">
+          <select class="input" id="diag-level" style="width:auto;">
+            <option value="">All severities</option>
+            ${['CRITICAL', 'ERROR', 'WARN', 'INFO'].map((lv) => html`<option value="${lv}" ${lv === diagFilter ? 'selected' : ''}>${lv}</option>`)}
+          </select>
+          <button type="button" class="btn-secondary tall" data-action="diag-filter">Apply</button>
+        </div>
+      </div>
+      ${logs.length ? html`<div class="table-wrap"><table class="table">
+        <thead><tr><th>Timestamp</th><th>Severity</th><th>Code</th><th>Subsystem</th><th>Message</th></tr></thead>
+        <tbody>${logs.slice(0, 50).map((l) => html`<tr>
+          <td data-label="Timestamp" class="num">${fmt.dateTime(l.ts)}</td>
+          <td data-label="Severity">${diagLevelBadge(l.level)}</td>
+          <td data-label="Code" class="num"><strong>${l.code}</strong></td>
+          <td data-label="Subsystem">${l.subsystem}</td>
+          <td data-label="Message">${l.message}</td>
+        </tr>`)}</tbody>
+      </table></div>` : html`<div class="empty-state" style="padding:20px;"><p>No diagnostic entries match this filter.</p></div>`}
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div><h3>How to Read Diagnostics &amp; Error Code Reference</h3><span class="card-sub">3-state LED status guide (Green = Nominal, Amber = Degraded, Red = Critical) and structured recovery codes.</span></div>
+        <span class="badge warm">${catalog.length} codes</span>
+      </div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Code</th><th>Severity</th><th>Subsystem</th><th>Meaning</th><th>Immediate Operator Recovery</th></tr></thead>
+        <tbody>${catalog.map((c) => html`<tr>
+          <td data-label="Code" class="num"><strong>${c.code}</strong></td>
+          <td data-label="Severity">${diagLevelBadge(c.severity)}</td>
+          <td data-label="Subsystem">${c.subsystem}</td>
+          <td data-label="Meaning"><strong>${c.title}</strong><div class="small muted">${c.meaning}</div></td>
+          <td data-label="Recovery" class="small">${c.recovery}</td>
+        </tr>`)}</tbody>
+      </table></div>
+    </div>`;
+}
+
+async function renderDiagnostics(panel) {
+  const data = await get('/diagnostics', { query: { limit: 100, level: diagFilter } });
+  panel.innerHTML = String(renderDiagnosticsHtml(data));
 }
 
 // ------------------------------------------------------------------ users
@@ -322,6 +415,20 @@ async function onClick(e) {
   const panel = root.querySelector('#sec-panel');
   try {
     if (b.dataset.tab) { tab = b.dataset.tab; root.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab)); return renderTab(); }
+    if (b.dataset.action === 'diag-filter') {
+      diagFilter = root.querySelector('#diag-level').value;
+      return renderDiagnostics(panel);
+    }
+    if (b.dataset.action === 'diag-selftest') {
+      b.disabled = true;
+      await post('/diagnostics/selftest');
+      await Promise.all([verifyChain(), renderDiagnostics(panel)]);
+      toast('5-subsystem diagnostic self-test completed');
+      return;
+    }
+    if (b.dataset.action === 'diag-log') {
+      return download('/diagnostics/log');
+    }
     if (b.dataset.action === 'audit-filter') {
       auditFilter = { action: root.querySelector('#audit-action').value, patientId: root.querySelector('#audit-patient').value.trim().toUpperCase() };
       return renderAudit(panel, true);

@@ -6,6 +6,7 @@ const http = require('node:http');
 const https = require('node:https');
 const os = require('node:os');
 const { createApp } = require('./app');
+const { startOcrSidecar } = require('./ocr/autostart');
 
 const HOUR = 60 * 60 * 1000;
 
@@ -40,6 +41,13 @@ function main() {
 
   console.log(`  Data:     ${config.dataDir}`);
   console.log(`  OCR:      ${ctx.ocr.name} - ${ctx.ocr.description}`);
+  const ocrSidecar = startOcrSidecar(ctx);
+  if (ctx.diagnostics) {
+    const watchdogMs = Number(process.env.WATCHDOG_INTERVAL_MS) > 0 ? Number(process.env.WATCHDOG_INTERVAL_MS) : 15000;
+    ctx.diagnostics.startWatchdog(watchdogMs);
+    ctx.diagnostics.log('INFO', 'OK', 'runtime', `Server started on port ${config.port} (watchdog ${watchdogMs}ms)`);
+    console.log(`  Diag log: ${ctx.diagnostics.logFile}`);
+  }
   if (services.auth.countUsers() === 0) console.log('\n  First run: open the app to create the administrator account (or run `npm run seed:demo`).');
 
   const housekeeping = () => {
@@ -59,6 +67,7 @@ function main() {
 
   const shutdown = () => {
     clearInterval(timer);
+    ocrSidecar.stop();
     for (const s of servers) s.close();
     close();
     process.exit(0);

@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const { requirePerm } = require('./mw');
+const { ERROR_CATALOG } = require('../lib/diagnostics');
 
 module.exports = (ctx) => {
   const r = express.Router();
@@ -83,7 +84,36 @@ module.exports = (ctx) => {
   });
 
   r.post('/backups', perm('backup.manage'), (req, res) => {
-    res.status(201).json(s.backup.run({ reason: 'manual', actor: req.actor }));
+    try {
+      res.status(201).json(s.backup.run({ reason: 'manual', actor: req.actor }));
+    } catch (err) {
+      ctx.diagnostics.log('WARN', 'ERR-BACKUP-006', 'storage', `Backup failed: ${err.message}`);
+      throw err;
+    }
+  });
+
+  // ------------------------------------------------------------------ diagnostics & watchdog
+  r.get('/diagnostics', perm('audit.read'), (req, res) => {
+    const snapshot = ctx.diagnostics.runChecks({ reason: 'watchdog', silent: false });
+    res.json({
+      snapshot,
+      catalog: Object.values(ERROR_CATALOG),
+      logs: ctx.diagnostics.getLogs({ limit: req.query.limit || 100, level: req.query.level || '' }),
+    });
+  });
+
+  r.post('/diagnostics/selftest', perm('audit.read'), (req, res) => {
+    const snapshot = ctx.diagnostics.runChecks({ reason: 'manual', silent: false, actor: req.actor });
+    res.json({
+      snapshot,
+      logs: ctx.diagnostics.getLogs({ limit: 100 }),
+    });
+  });
+
+  r.get('/diagnostics/log', perm('audit.read'), (req, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="IRBY_Diagnostics_${stamp()}.log"`);
+    res.send(ctx.diagnostics.readLogFile());
   });
 
   return r;
