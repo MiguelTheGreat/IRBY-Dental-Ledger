@@ -483,11 +483,13 @@ function renderOcrStatus() {
   const s = state.config.ocr || {};
   const badge = root.querySelector('#ocr-provider');
   if (!badge) return;
-  badge.className = `badge ${s.ready ? (s.demo ? 'amber' : 'green') : 'red'}`;
-  badge.textContent = `${s.provider || '?'} • ${s.ready ? (s.demo ? 'demo' : 'ready') : 'not ready'}`;
+  const tone = s.ready ? (s.demo ? 'amber' : 'green') : (s.starting ? 'amber' : 'red');
+  const label = s.ready ? (s.demo ? 'demo' : 'ready') : (s.starting ? 'starting…' : 'not ready');
+  badge.className = `badge ${tone}`;
+  badge.textContent = `${s.provider || '?'} • ${label}`;
   root.querySelector('#ocr-detail').textContent = s.ready
     ? (s.demo ? 'Demo provider: returns sample data so the review flow can be tested. Mount your model with OCR_PROVIDER.' : `${s.description}. ${s.detail || ''}`)
-    : `${s.description || 'OCR'} is not ready: ${s.detail || 'unknown error'}`;
+    : (s.starting ? `${s.detail || 'Starting local OCR engine…'} Ready in a few seconds.` : `${s.description || 'OCR'} is not ready: ${s.detail || 'unknown error'}`);
   const docTag = ocrInfo && ocrInfo.documentType
     ? ` · ${DOC_TYPE_LABELS[ocrInfo.documentType] || ocrInfo.documentType}${ocrInfo.documentConfidence != null ? ` (${Math.round(ocrInfo.documentConfidence * 100)}%)` : ''}`
     : '';

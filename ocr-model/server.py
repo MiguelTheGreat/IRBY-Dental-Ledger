@@ -9,7 +9,7 @@ Then in the web app's .env:
     OCR_HTTP_URL=http://127.0.0.1:8765/predict
 
 Endpoints
-    GET  /health   -> {"ready": true, "detail": "..."}
+    GET  /health   -> {"ready": true|false, "starting": true|false, "detail": "..."}
     POST /predict  body = raw image bytes (Content-Type image/jpeg|png|webp)
                    -> JSON returned by model.predict()
 """
@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import sys
+import threading
 import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,10 +26,26 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import model  # noqa: E402
 
 MAX_BYTES = 15 * 1024 * 1024
+READY_EVENT = threading.Event()
+LOAD_LOCK = threading.Lock()
+LOADING = True
+
+
+def _load_in_background():
+    global LOADING
+    try:
+        model.load()
+        ok, detail = model.ready()
+        print(f"OCR model loaded ({'ready' if ok else 'NOT READY'}: {detail})", flush=True)
+    except Exception:
+        traceback.print_exc()
+    finally:
+        LOADING = False
+        READY_EVENT.set()
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "IrbyOCR/1.0"
+    server_version = "IrbyOCR/1.1"
 
     def _send(self, status, payload):
         body = json.dumps(payload).encode("utf-8")
@@ -40,8 +57,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.rstrip("/") == "/health":
+            if LOADING and not READY_EVENT.is_set():
+                return self._send(200, {
+                    "ready": False,
+                    "starting": True,
+                    "detail": "Loading Keras Doc Classifier + EasyOCR…",
+                })
             ok, detail = model.ready()
-            return self._send(200, {"ready": ok, "detail": detail})
+            return self._send(200, {"ready": ok, "starting": False, "detail": detail})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -51,6 +74,8 @@ class Handler(BaseHTTPRequestHandler):
         if not length or length > MAX_BYTES:
             return self._send(413, {"error": "send one image up to 15 MB"})
         image = self.rfile.read(length)
+        # If a scan arrives while weights are still warming up, wait for load() to finish
+        READY_EVENT.wait(timeout=60)
         started = time.time()
         try:
             result = model.predict(image)
@@ -71,10 +96,10 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
     args = ap.parse_args()
-    model.load()
-    ok, detail = model.ready()
-    print(f"OCR model server on http://{args.host}:{args.port}  ({'ready' if ok else 'NOT READY'}: {detail})")
-    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"OCR model server on http://{args.host}:{args.port}  (loading model in background...)", flush=True)
+    threading.Thread(target=_load_in_background, daemon=True).start()
+    server.serve_forever()
 
 
 if __name__ == "__main__":

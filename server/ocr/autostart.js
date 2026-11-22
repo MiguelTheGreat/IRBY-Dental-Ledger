@@ -26,8 +26,26 @@ async function isReachable(healthUrl) {
 }
 
 function resolvePythonBin() {
-  if (process.env.OCR_PYTHON) return [process.env.OCR_PYTHON];
-  return process.platform === 'win32' ? ['python', 'py'] : ['python3', 'python'];
+  const list = [];
+  if (process.env.OCR_PYTHON) list.push(process.env.OCR_PYTHON);
+  if (process.platform === 'win32') {
+    list.push('python', 'py');
+    const local = process.env.LOCALAPPDATA || '';
+    const roots = [
+      local ? path.join(local, 'Programs', 'Python') : '',
+      'C:\\Program Files',
+      'C:\\',
+    ].filter(Boolean);
+    for (const r of roots) {
+      for (const ver of ['Python312', 'Python311', 'Python313', 'Python310']) {
+        const exe = path.join(r, ver, 'python.exe');
+        if (fs.existsSync(exe)) list.push(exe);
+      }
+    }
+  } else {
+    list.push('python3', 'python', '/usr/local/bin/python3', '/opt/homebrew/bin/python3');
+  }
+  return [...new Set(list)];
 }
 
 function startOcrSidecar(ctx) {

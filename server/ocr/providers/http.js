@@ -13,9 +13,13 @@ module.exports = (opts) => {
       try {
         const res = await fetch(healthUrl, { headers, signal: AbortSignal.timeout(2000) });
         const body = await res.json().catch(() => ({}));
-        return { ready: res.ok && body.ready !== false, detail: body.detail || `Health check ${res.status} at ${healthUrl}` };
+        return {
+          ready: res.ok && body.ready !== false,
+          starting: !!body.starting,
+          detail: body.detail || `Health check ${res.status} at ${healthUrl}`,
+        };
       } catch (err) {
-        return { ready: false, detail: `Model server not reachable at ${healthUrl} (${err.cause ? err.cause.code || err.message : err.message}). Start it with: python ocr-model/server.py` };
+        return { ready: false, starting: false, detail: `Model server not reachable at ${healthUrl} (${err.cause ? err.cause.code || err.message : err.message}).` };
       }
     },
     async recognize(buffer, { mime }) {
