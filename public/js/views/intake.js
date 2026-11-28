@@ -1,5 +1,5 @@
 // FR-1 patient registration (PDA Patient Information Record, portrait <= 500 KB,
-// mandatory consent) and FR-8 OCR scanning (Keras Doc Classifier + EasyOCR).
+// mandatory consent) and FR-8 OCR scanning (RapidOCR + Keras document classifier).
 // OCR output is never saved without staff review (NFR-S5).
 import { get, post, put, del, upload, download } from '../api.js';
 import {
@@ -115,6 +115,7 @@ let editingId = null;
 let portrait = null;        // pending { dataUrl, bytes }
 let oversized = null;       // rejected File awaiting "compress automatically"
 let autofilled = new Map(); // field -> confidence (unconfirmed OCR values)
+let ocrReview = new Set();  // fields the OCR model asks staff to check closely
 let ocrInfo = null;
 let saving = false;
 
@@ -504,7 +505,8 @@ function renderAutofill() {
     const input = root.querySelector(`[name="${f}"]`);
     if (autofilled.has(f)) {
       const c = autofilled.get(f);
-      slot.innerHTML = String(html`<span class="af-tag">Auto-filled${c != null ? ` · ${Math.round(c * 100)}% confidence` : ''} <button type="button" data-confirm="${f}" title="Mark as reviewed">✓ Confirm</button></span>`);
+      const check = ocrReview.has(f);
+      slot.innerHTML = String(html`<span class="af-tag${check ? ' check' : ''}" title="${check ? 'The scanner was unsure of this value (repaired, inferred or faint handwriting).' : ''}">Auto-filled${c != null ? ` · ${Math.round(c * 100)}% confidence` : ''}${check ? ' · check' : ''} <button type="button" data-confirm="${f}" title="Mark as reviewed">✓ Confirm</button></span>`);
       if (input) input.classList.add('ocr-highlight');
     } else {
       slot.innerHTML = '';
@@ -711,6 +713,7 @@ async function scan(source) {
     const total = Math.round(performance.now() - t0);
     let count = 0;
     autofilled = new Map();
+    ocrReview = new Set(Array.isArray(r.review) ? r.review : []);
     for (const [f, v] of Object.entries(r.fields || {})) {
       const el = root.querySelector(`[name="${f}"]`);
       if (!el || !v) continue;

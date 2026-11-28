@@ -130,30 +130,31 @@ Photo view types and the default numbering are set in `config/clinic.json`.
 
 ---
 
-## 5. OCR scanner – Keras Document Classifier + EasyOCR (automatic startup)
+## 5. OCR scanner – RapidOCR + Keras document classifier (automatic startup)
 
-The Intake screen's **Scan Paper Form (OCR)** captures the paper **Philippine Dental Association (PDA) Dental Chart — Patient Information Record**, classifies the document using `ocr-model/doc_classifier_frozen_easyocr.keras` (EfficientNetB0 + frozen EasyOCR 256-dim visual-text features across `["document", "form", "invoice", "real_life"]`), extracts structured fields + circled `Sex (M/F)` + circled `Yes/No` answers + Q8/Q13 checkboxes via EasyOCR & OpenCV ink analysis, and populates the Intake form. Every filled field is highlighted, marked **Auto-filled · confidence %**, and must be **edited or confirmed** before *Save* is allowed (NFR-S5). The scanned image is never stored.
+The Intake screen's **Scan Paper Form (OCR)** reads the paper **Philippine Dental Association (PDA) Dental Chart — Patient Information Record** and fills the Intake form: the patient's details, dental history, physician, the circled `Yes/No` answers with their *If so* details, circled `Sex (M/F)`, and the Q8 allergy and Q13 condition checklists. It works on flatbed scans and on phone photos (the page is found and flattened, turned upright and de-skewed), separates the patient's pen ink from the printed form, and pairs each handwritten answer with its printed label. `ocr-model/doc_classifier_frozen_easyocr.keras` with `doc_class_names.json` labels the image `document / form / invoice / real_life`. Every filled field is highlighted, marked **Auto-filled · confidence %** (values the model is unsure of also say **check**), and must be **edited or confirmed** before *Save* is allowed (NFR-S5). The scanned image is never stored.
 
 ### Automatic sidecar startup
-When `OCR_PROVIDER=http` targets `127.0.0.1` / `localhost` (default in `.env`), **IRBY Dental Ledger automatically starts `ocr-model/server.py` silently in the background** when the app opens and stops it cleanly on exit (`server/ocr/autostart.js`). Clinic staff never need to launch a separate terminal or script.
+When `OCR_PROVIDER=http` targets `127.0.0.1` / `localhost` (default in `.env`), **IRBY Dental Ledger automatically starts `ocr-model/server.py` silently in the background** when the app opens and stops it cleanly on exit (`server/ocr/autostart.js`). It uses the Python environment in `ocr-model/.venv`. Clinic staff never need to launch a separate terminal or script.
 
-Install the Python dependencies once on the clinic PC:
+Set up that environment once on the clinic PC (Python 3.10 – 3.12):
 
-```bash
-pip install -r ocr-model/requirements.txt
+```powershell
+powershell -ExecutionPolicy Bypass -File ocr-model\setup-ocr.ps1
 ```
+
+(macOS / Linux: `sh ocr-model/setup-ocr.sh`.)
 
 Switch providers with one `.env` setting if needed:
 
 | `OCR_PROVIDER` | Use when | Mount by |
 |---|---|---|
-| `http` *(default)* | Built-in Keras + EasyOCR model server (auto-started) | `ocr-model/model.py` + `ocr-model/doc_classifier_frozen_easyocr.keras` |
+| `http` *(default)* | Built-in RapidOCR + Keras model server (auto-started) | `ocr-model/model.py` + `ocr-model/doc_classifier_frozen_easyocr.keras` |
 | `mock` | Demo / UI testing without Python | – |
 | `command` | One-shot script per scan | `OCR_COMMAND=python ocr-model/infer.py {image}` |
 | `module` | Model runs in Node (`tesseract.js`, `onnxruntime-node`, etc.) | copy `ocr-model/js-provider.example.js`, set `OCR_MODULE` |
 
-Dates, sex values, full names (e.g. "Dela Cruz, Mateo L."), dental history, and medical history checkboxes are normalised automatically. The full contract and accuracy-testing notes are in [ocr-model/README.md](ocr-model/README.md). Scans time out after `OCR_TIMEOUT_MS` (`30000` ms default in `.env` for CPU EasyOCR inference).
-
+A page takes about 3 to 4 s on a laptop CPU. How the pipeline works, the output contract, settings and test results are in [ocr-model/README.md](ocr-model/README.md). Scans time out after `OCR_TIMEOUT_MS` (`30000` ms default in `.env`).
 ---
 
 ## 6. Requirements traceability
@@ -305,7 +306,8 @@ server/
   ocr/                adapter: index.js, parser.js, providers/{mock,http,command,module}.js
 public/               web app (vanilla ES modules, no build step), print.html, service worker
 config/               pda-symbols.json, consent.json, procedures.json, clinic.json
-ocr-model/            model.py (mount here), server.py, infer.py, js-provider.example.js
+ocr-model/            model.py (entry point), scan.py, formparse.py, pda.py, lexicon.py, textnorm.py,
+                      server.py, infer.py, setup-ocr.ps1 / .sh, Keras classifier + class names
 scripts/              seed-demo, bench, restore-backup, make-cert, demo-image
 tests/                node:test suites
 ```
