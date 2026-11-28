@@ -33,6 +33,9 @@ function resolvePythonBin(root) {
     ? path.join(root || '', 'ocr-model', '.venv', 'Scripts', 'python.exe')
     : path.join(root || '', 'ocr-model', '.venv', 'bin', 'python3');
   if (root && fs.existsSync(venv)) list.push(venv);
+  // <install folder>\python: the embeddable Python that IRBY Dental Ledger Setup.exe sets up
+  const bundled = path.join(root || '', 'python', process.platform === 'win32' ? 'python.exe' : 'bin/python3');
+  if (root && fs.existsSync(bundled)) list.push(bundled);
   if (process.platform === 'win32') {
     list.push('python', 'py');
     const local = process.env.LOCALAPPDATA || '';
