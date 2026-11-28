@@ -195,6 +195,26 @@ Date of registration: 2026-01-15`);
     assert.deepEqual(normalizeResult({ fields: 'garbage' }).fields, {});
     assert.deepEqual(FORM_FIELDS, ['lastName', 'firstName', 'middleName', 'dateOfBirth', 'sex', 'address', 'contactNumber', 'allergies', 'registrationDate']);
   });
+
+  it('FR-8: fieldsComplete stops printed labels of a blank form being parsed as values', () => {
+    const text = 'Name:  Birthdate (mm/dd/yy):\nLast  First  Middle\nReligion:  Nationality:  Home No.:';
+    const legacy = normalizeResult({ text });
+    assert.ok(Object.keys(legacy.fields).length > 0); // the old text parser guesses from labels
+    const model = normalizeResult({ text, fields: {}, fieldsComplete: true });
+    assert.deepEqual(model.fields, {});
+  });
+
+  it('FR-8: keeps the model review list, only for fields that were returned', () => {
+    const r = normalizeResult({
+      fields: { email: 'maria.reyes@gmail.com', sex: 'F' },
+      confidence: { email: 0.66, sex: 0.75 },
+      review: ['email', 'sex', 'dateOfBirth', 42],
+      fieldsComplete: true,
+    });
+    assert.deepEqual(r.review, ['email', 'sex']);
+    assert.equal(r.fields.sex, 'Female');
+    assert.equal(normalizeResult({ fields: { sex: 'M' } }).review, undefined);
+  });
 });
 
 describe('OCR adapter: createOcr + mock provider', () => {

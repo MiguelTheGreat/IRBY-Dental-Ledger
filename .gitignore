@@ -10,3 +10,5 @@ coverage/
 __pycache__/
 *.pyc
 android/app/build_cli/
+# Local Python environment for the OCR model (ocr-model/setup-ocr.ps1 / setup-ocr.sh)
+ocr-model/.venv/
