@@ -25,9 +25,14 @@ async function isReachable(healthUrl) {
   }
 }
 
-function resolvePythonBin() {
+function resolvePythonBin(root) {
   const list = [];
   if (process.env.OCR_PYTHON) list.push(process.env.OCR_PYTHON);
+  // ocr-model/.venv (made by ocr-model/setup-ocr.ps1 / setup-ocr.sh) has RapidOCR + Keras installed
+  const venv = process.platform === 'win32'
+    ? path.join(root || '', 'ocr-model', '.venv', 'Scripts', 'python.exe')
+    : path.join(root || '', 'ocr-model', '.venv', 'bin', 'python3');
+  if (root && fs.existsSync(venv)) list.push(venv);
   if (process.platform === 'win32') {
     list.push('python', 'py');
     const local = process.env.LOCALAPPDATA || '';
@@ -96,10 +101,16 @@ function startOcrSidecar(ctx) {
 
     child.stdout.on('data', (chunk) => {
       const line = String(chunk).trim();
-      if (line.includes('OCR model server on')) {
+      if (line.includes('OCR model server on') || line.includes('OCR model loaded')) {
         console.log(`  OCR Auto: ${line}`);
         log('INFO', line);
       }
+    });
+    // Always drain stderr: the server logs every request there, and an unread pipe fills up
+    // (64 KB on Windows) and then blocks the Python process mid-scan.
+    child.stderr.on('data', (chunk) => {
+      const text = String(chunk);
+      if (/Traceback|Error/.test(text)) log('WARN', `OCR sidecar: ${text.trim().slice(0, 300)}`);
     });
 
     child.on('error', (err) => {
@@ -125,7 +136,7 @@ function startOcrSidecar(ctx) {
       if (up) console.log(`  OCR Auto: already running at http://${host}:${port}`);
       return;
     }
-    launch(resolvePythonBin());
+    launch(resolvePythonBin(config.root));
   });
 
   const stop = () => {

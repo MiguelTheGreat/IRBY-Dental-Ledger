@@ -237,7 +237,10 @@ function normalizeResult(raw) {
       explicit[k] = v.value;
     }
   }
-  const parsed = parseRegistrationText(text);
+  // A provider that pairs labels and answers itself (ocr-model/model.py) sets fieldsComplete:
+  // its fields are the whole answer, and re-parsing the raw text would turn printed labels of
+  // a blank form into values ("Birthdate" as a first name).
+  const parsed = result.fieldsComplete === true ? {} : parseRegistrationText(text);
   const merged = { ...parsed, ...explicit };
 
   if (merged.fullName && (!merged.lastName || !merged.firstName)) {
@@ -264,6 +267,10 @@ function normalizeResult(raw) {
     if (confidence[f] != null) confidence[f] = Math.max(0, Math.min(1, confidence[f] > 1 ? confidence[f] / 100 : confidence[f]));
   }
   const out = { fields, confidence, text };
+  if (Array.isArray(result.review)) {
+    // fields the model rescued, repaired or read with low confidence: check these first
+    out.review = result.review.filter((k) => typeof k === 'string' && fields[k] != null);
+  }
   if (result.medicalHistory && typeof result.medicalHistory === 'object') {
     out.medicalHistory = result.medicalHistory;
   }

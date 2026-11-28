@@ -1030,7 +1030,9 @@ namespace IrbyDentalInstaller
 
         private static void CopyProjectFiles(string sourceDir, string targetDir)
         {
-            string[] skipDirs = new[] { "IRBY Dental Ledger.app", ".git" };
+            // ocr-model\.venv is a developer's local Python environment (about 2 GB, tied to that
+            // machine's Python); the installed copy builds its own with ocr-model\setup-ocr.ps1
+            string[] skipDirs = new[] { "IRBY Dental Ledger.app", ".git", Path.Combine("ocr-model", ".venv") };
             foreach (string dirPath in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
             {
                 string rel = dirPath.Substring(sourceDir.Length).TrimStart(Path.DirectorySeparatorChar);
