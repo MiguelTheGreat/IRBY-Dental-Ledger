@@ -92,7 +92,7 @@ async function showLogin() {
   $('#login-sub').textContent = setupMode
     ? 'First run: create the administrator account. You can add dentists and front-desk staff afterwards.'
     : 'Sign in with your clinic credentials to unlock patient charts and billing ledgers.';
-  $('#login-submit-text').textContent = setupMode ? 'Create administrator' : 'Unlock Ledger';
+  $('#login-submit-text').textContent = setupMode ? 'Create administrator' : 'Unlock ledger';
   $('#login-password').autocomplete = setupMode ? 'new-password' : 'current-password';
   if (reason === 'idle') loginError(`You were signed out after ${state.idleMinutes} minutes of inactivity.`, true);
   else if (reason === 'expired') loginError('Your session ended. Please sign in again.', true);
@@ -241,7 +241,7 @@ function renderPatientBar() {
     <div class="patient-vitals">
       <div class="vital-pill"><span>Next:</span><strong class="num">${p.nextAppointment ? fmt.date(p.nextAppointment.date) : '—'}</strong></div>
       <div class="vital-pill"><span>Balance:</span><strong class="num ${p.balanceCents > 0 ? 'owed' : ''}">${fmt.peso(p.balanceCents)}</strong></div>
-      <button class="btn-secondary" style="border-radius:var(--r-pill); padding:6px 14px;" data-action="switch-patient">Switch Patient</button>
+      <button class="btn-secondary" style="border-radius:var(--r-pill); padding:6px 14px;" data-action="switch-patient">Switch patient</button>
     </div>`);
 }
 
@@ -284,7 +284,7 @@ async function openPairingModal() {
 
           <div style="display:flex; gap:8px; justify-content:center; align-items:center; max-width:420px; margin:0 auto 16px;">
             <input class="input num" id="pairing-url-input" value="${currentUrl}" readonly style="text-align:center; font-size:14px; font-weight:700;" />
-            <button class="btn-primary" type="button" id="copy-pairing-btn" style="white-space:nowrap; padding:8px 14px;">Copy Link</button>
+            <button class="btn-primary" type="button" id="copy-pairing-btn" style="white-space:nowrap; padding:8px 14px;">Copy link</button>
           </div>
 
           ${addresses.length > 1 ? html`
@@ -315,12 +315,12 @@ async function openPairingModal() {
           try {
             await navigator.clipboard.writeText(input.value);
             copyBtn.textContent = 'Copied! ✓';
-            setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+            setTimeout(() => { copyBtn.textContent = 'Copy link'; }, 2000);
           } catch {
             input.select();
             document.execCommand('copy');
             copyBtn.textContent = 'Copied! ✓';
-            setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+            setTimeout(() => { copyBtn.textContent = 'Copy link'; }, 2000);
           }
         });
 
@@ -365,7 +365,7 @@ async function openSwitcher() {
       <div class="patient-switch-list" id="switch-list"><span class="spinner"></span></div>`),
     actions: [
       { label: 'Cancel', value: null },
-      ...(can('patients.write') ? [{ label: '+ Register new', value: '__new__' }] : []),
+      ...(can('patients.write') ? [{ label: '+ New patient', value: '__new__' }] : []),
     ],
     onMount: (d) => {
       const input = d.querySelector('#switch-search');

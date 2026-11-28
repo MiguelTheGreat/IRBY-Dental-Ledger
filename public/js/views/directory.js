@@ -18,19 +18,19 @@ export function mount(el) {
   root.innerHTML = String(html`
     <div class="view-header">
       <div>
-        <div class="row"><h2>Patient Directory</h2><span class="badge warm num" id="dir-total">— records</span></div>
+        <div class="row"><h2>Patients</h2><span class="badge warm num" id="dir-total">— records</span></div>
         <p>Search by name or record ID — tolerates up to 2 typos (e.g. "Dela Crz").</p>
       </div>
       <div class="view-actions">
         ${can('data.export') ? html`<button class="btn-secondary tall" data-action="csv">Export CSV</button><button class="btn-secondary tall" data-action="json">Export JSON</button>` : ''}
-        ${can('patients.write') ? html`<button class="btn-primary" data-action="register">+ Register Patient</button>` : ''}
+        ${can('patients.write') ? html`<button class="btn-primary" data-action="register">+ New patient</button>` : ''}
       </div>
     </div>
     <div class="card">
       <div class="row" style="margin-bottom:12px;">
         <input type="search" class="input grow" id="dir-search" placeholder="Search patient name or record ID (PT-2026-0001)…" autocomplete="off" style="min-width:220px;" />
         <select class="input" id="dir-sort" style="width:auto;" aria-label="Sort by">${SORTS.map(([v, l]) => html`<option value="${v}">${l}</option>`)}</select>
-        <button class="btn-secondary tall" id="dir-dir" title="Toggle sort direction">↓ Desc</button>
+        <button class="btn-secondary tall" id="dir-dir" title="Toggle sort direction"><span class="btn-ico" aria-hidden="true">↓</span>Desc</button>
       </div>
       <div class="search-meta">
         <div class="filter-row">
@@ -94,7 +94,7 @@ function render(roundTripMs) {
     : `${result.total.toLocaleString()} records · ${roundTripMs} ms`;
   root.querySelector('#dir-sort').value = SORTS.some(([v]) => v === result.sort) ? result.sort : '';
   if (result.sort === 'relevance') root.querySelector('#dir-sort').value = '';
-  root.querySelector('#dir-dir').textContent = result.dir === 'desc' ? '↓ Desc' : '↑ Asc';
+  root.querySelector('#dir-dir').innerHTML = result.dir === 'desc' ? '<span class="btn-ico" aria-hidden="true">↓</span>Desc' : '<span class="btn-ico" aria-hidden="true">↑</span>Asc';
   const box = root.querySelector('#dir-results');
   if (!result.items.length) {
     box.innerHTML = String(html`<div class="empty-state"><span class="icon">🔍</span><h3>No matching patients</h3>
