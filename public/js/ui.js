@@ -138,10 +138,28 @@ export const fmt = {
     const [h, m] = hm.split(':').map(Number);
     return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
   },
+  // timestamps use the same wording as dates and times everywhere else: "Nov 28, 2026 · 6:02 PM"
   dateTime(ms) {
     if (!ms) return '—';
+    return `${fmt.dayOf(ms)} · ${fmt.timeOf(ms)}`;
+  },
+  dayOf(ms) {
+    if (!ms) return '—';
     const d = new Date(ms);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return fmt.date(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  },
+  timeOf(ms) {
+    if (!ms) return '';
+    const d = new Date(ms);
+    return fmt.time(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+  },
+  // Philippine mobile numbers shown one way ("0917 550 0192") however they were typed;
+  // anything else (landlines, foreign numbers) is shown as entered.
+  phone(v) {
+    if (!v) return '—';
+    const digits = String(v).replace(/[^\d+]/g, '');
+    const m = /^(?:\+?63|0)?(9\d{2})(\d{3})(\d{4})$/.exec(digits);
+    return m ? `0${m[1]} ${m[2]} ${m[3]}` : String(v);
   },
   kb(bytes) { return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`; },
   sexShort(s) { return s === 'Male' ? 'M' : s === 'Female' ? 'F' : s ? 'O' : ''; },

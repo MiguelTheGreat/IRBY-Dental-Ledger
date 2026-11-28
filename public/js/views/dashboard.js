@@ -21,12 +21,12 @@ function skeleton() {
   return html`
     <div class="view-header">
       <div>
-        <h2>Clinic Overview</h2>
+        <h2>Dashboard</h2>
         <p>Today's appointments and internal follow-up reminders · <span id="dash-date">${fmt.date(todayISO())}</span></p>
       </div>
       <div class="view-actions">
-        <button class="btn-secondary tall" data-action="refresh">↻ Refresh</button>
-        ${can('patients.write') ? html`<button class="btn-primary" data-action="register">+ Register Patient</button>` : ''}
+        <button class="btn-secondary tall" data-action="refresh"><span class="btn-ico" aria-hidden="true">↻</span>Refresh</button>
+        ${can('patients.write') ? html`<button class="btn-primary" data-action="register">+ New patient</button>` : ''}
       </div>
     </div>
     <div id="dash-body"><div class="card"><div class="empty-state"><span class="spinner"></span>Loading dashboard…</div></div></div>`;
@@ -95,7 +95,7 @@ function render(ms) {
             </td>
             <td data-label="Return Date" class="num">${fmt.date(f.date)}${f.time ? html`<div class="muted small">${fmt.time(f.time)}</div>` : ''}</td>
             <td data-label="Procedure">${f.reason || '—'}</td>
-            <td data-label="Contact" class="num">${f.contactNumber || '—'}</td>
+            <td data-label="Contact" class="num">${fmt.phone(f.contactNumber)}</td>
             <td data-label="Status">${statusBadge(f.status)}</td>
             <td data-label="Action"><div class="actions">
               <button class="btn-secondary" data-open="chart" data-patient="${f.patientId}">Chart</button>
@@ -111,7 +111,7 @@ function render(ms) {
       <div class="card">
         <div class="card-top"><h3>Outstanding Balances</h3><span class="badge ${st.outstandingCents ? 'red' : 'green'} num">${fmt.peso(st.outstandingCents)}</span></div>
         <p class="card-sub">${st.withBalance} patient${st.withBalance === 1 ? '' : 's'} with an unpaid balance.</p>
-        <button class="btn-secondary tall" style="margin-top:12px;" data-action="balances">View in directory →</button>
+        <button class="btn-secondary tall" style="margin-top:12px;" data-action="balances">View in patient list →</button>
       </div>
       <div class="card">
         <div class="card-top"><h3>Records</h3><span class="badge warm num">${st.patients.toLocaleString()} active</span></div>

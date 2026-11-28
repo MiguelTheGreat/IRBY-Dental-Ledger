@@ -33,7 +33,7 @@ const LABELS = {
   previousDentist: 'Previous dentist (Dr.)', lastDentalVisit: 'Last dental visit',
   physicianName: 'Name of physician (Dr.)', physicianSpecialty: 'Specialty, if applicable',
   physicianAddress: 'Office address', physicianPhone: 'Office number',
-  bleedingTime: 'Bleeding time', bloodType: 'Blood type', bloodPressure: 'Blood pressure',
+  bleedingTime: '9. Bleeding time', bloodType: '11. Blood type', bloodPressure: '12. Blood pressure',
   allergies: 'Allergies / medical alerts summary', registrationDate: 'Registration date',
 };
 
@@ -57,7 +57,7 @@ const WOMEN_QUESTIONS = [
 const ALLERGY_OPTIONS = [
   { key: 'localAnesthetic', label: 'Local Anesthetic (ex. Lidocaine)' },
   { key: 'penicillin', label: 'Penicillin / Antibiotics' },
-  { key: 'sulfaDrugs', label: 'Sulfa drugs' },
+  { key: 'sulfaDrugs', label: 'Sulfa Drugs' },
   { key: 'aspirin', label: 'Aspirin' },
   { key: 'latex', label: 'Latex' },
   { key: 'other', label: 'Other' },
@@ -76,7 +76,7 @@ const MEDICAL_CONDITIONS = [
   ['hivAids', 'AIDS or HIV Infection'],
   ['rheumaticFever', 'Rheumatic Fever'],
   ['asthma', 'Asthma'],
-  ['std', 'Sexually Transmitted disease'],
+  ['std', 'Sexually Transmitted Disease'],
   ['hayFeverAllergies', 'Hay Fever / Allergies'],
   ['emphysema', 'Emphysema'],
   ['stomachUlcers', 'Stomach Troubles / Ulcers'],
@@ -89,15 +89,15 @@ const MEDICAL_CONDITIONS = [
   ['tuberculosis', 'Tuberculosis'],
   ['headInjuries', 'Head Injuries'],
   ['radiationTherapy', 'Radiation Therapy'],
-  ['swollenAnkles', 'Swollen ankles'],
+  ['swollenAnkles', 'Swollen Ankles'],
   ['arthritis', 'Arthritis / Rheumatism'],
   ['jointReplacement', 'Joint Replacement / Implant'],
-  ['kidneyDisease', 'Kidney disease'],
+  ['kidneyDisease', 'Kidney Disease'],
   ['otherCondition', 'Other'],
   ['heartSurgery', 'Heart Surgery'],
   ['diabetes', 'Diabetes'],
   ['heartAttack', 'Heart Attack'],
-  ['chestPain', 'Chest pain'],
+  ['chestPain', 'Chest Pain'],
   ['thyroidProblem', 'Thyroid Problem'],
   ['stroke', 'Stroke'],
 ];
@@ -236,12 +236,12 @@ function render(rawValues) {
   root.innerHTML = String(html`
     <div class="view-header">
       <div>
-        <h2>${mode === 'edit' ? 'Patient Information Record' : 'Patient Registration'}</h2>
+        <h2>${mode === 'edit' ? 'Patient Record' : 'Patient Intake'}</h2>
         <p>${mode === 'edit' ? html`Editing <strong>${p.fullName}</strong> · <span class="num">${p.id}</span>` : 'Scan the Philippine Dental Association (PDA) Patient Information Record or enter details, then verify signed consent.'}</p>
       </div>
       <div class="view-actions">
-        ${mode === 'edit' && can('patients.write') ? html`<button class="btn-secondary tall" data-action="new">+ New registration</button>` : ''}
-        ${can('ocr.scan') && can('patients.write') ? html`<button class="btn-primary" data-action="scan-camera">Scan Paper Form (OCR)</button>` : ''}
+        ${mode === 'edit' && can('patients.write') ? html`<button class="btn-secondary tall" data-action="new">+ New patient</button>` : ''}
+        ${can('ocr.scan') && can('patients.write') ? html`<button class="btn-primary" data-action="scan-camera">Scan paper form (OCR)</button>` : ''}
       </div>
     </div>
 
@@ -335,7 +335,7 @@ function render(rawValues) {
             ${YES_NO_QUESTIONS.map((q) => yesNoRow(q, qMap))}
           </div>
 
-          <div class="pda-sub-label">8. Allergy Checklist (syncs with Medical Alerts)</div>
+          <div class="pda-sub-label">Allergy checklist for question 8 (syncs with medical alerts)</div>
           <div class="pda-check-grid">
             ${ALLERGY_OPTIONS.map((a) => html`
               <label class="pda-check-item" data-allergy="${a.key}">
@@ -350,15 +350,19 @@ function render(rawValues) {
             ${field('allergies', { type: 'textarea', placeholder: 'Summary shown in clinical alert bar (e.g. Penicillin / Antibiotics, Latex — or "None")' }, values)}
           </div>
 
+          <!-- questions 9 to 12 in the paper form's order -->
           <div class="grid-3" style="margin-top:10px;">
             ${field('bleedingTime', { placeholder: 'e.g. 3 mins' }, values)}
-            ${field('bloodType', { placeholder: 'e.g. O+' }, values)}
-            ${field('bloodPressure', { placeholder: 'e.g. 120/80 mmHg' }, values)}
           </div>
 
-          <div class="pda-sub-label">10. For Women Only</div>
+          <div class="pda-sub-label">10. For women only</div>
           <div class="pda-yn-list">
             ${WOMEN_QUESTIONS.map((q) => yesNoRow(q, qMap))}
+          </div>
+
+          <div class="grid-3" style="margin-top:10px;">
+            ${field('bloodType', { placeholder: 'e.g. O+' }, values)}
+            ${field('bloodPressure', { placeholder: 'e.g. 120/80 mmHg' }, values)}
           </div>
 
           <div class="pda-sub-label">13. Do you have or have you had any of the following? Check which apply</div>
@@ -388,7 +392,7 @@ function render(rawValues) {
         </div>
 
         <div class="row" style="margin-top:18px;">
-          ${can('patients.write') ? html`<button class="btn-primary grow" type="submit" id="intake-save">${mode === 'edit' ? 'Save Changes' : 'Confirm & Save Profile'}</button>` : ''}
+          ${can('patients.write') ? html`<button class="btn-primary grow" type="submit" id="intake-save">${mode === 'edit' ? 'Save changes' : 'Confirm & save profile'}</button>` : ''}
           ${mode === 'edit' ? html`<button class="btn-secondary tall" type="button" data-action="revert">Revert</button>` : html`<button class="btn-secondary tall" type="button" data-action="clear">Clear form</button>`}
         </div>
         <div class="small muted" id="save-timing" style="margin-top:8px;"></div>
