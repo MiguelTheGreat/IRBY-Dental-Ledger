@@ -18,8 +18,8 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("Custom Installer for IRBY Dental Ledger")]
 [assembly: AssemblyCompany("IRBY Dental Clinic")]
 [assembly: AssemblyProduct("IRBY Dental Ledger")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 namespace IrbyDentalInstaller
 {
@@ -28,13 +28,57 @@ namespace IrbyDentalInstaller
         [DllImport("user32.dll")]
         private static extern bool SetProcessDPIAware();
 
+        // Unattended install (IT deployment, automated tests):
+        //   "IRBY Dental Ledger Setup.exe" /silent "C:\IRBY Dental Ledger" [/demo] [/noocr] [/shortcuts]
+        // Writes install-log.txt in the target folder; exit code 0 = installed, 1 = failed.
         [STAThread]
-        private static void Main()
+        private static int Main(string[] args)
         {
             try { SetProcessDPIAware(); } catch { }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new InstallerForm());
+
+            SilentOptions silent = SilentOptions.Parse(args);
+            InstallerForm form = new InstallerForm(silent);
+            Application.Run(form);
+            return form.ExitCode;
+        }
+    }
+
+    internal sealed class SilentOptions
+    {
+        public string TargetDir;
+        public bool Demo;
+        public bool Ocr = true;
+        public bool Shortcuts;
+
+        public static SilentOptions Parse(string[] args)
+        {
+            if (args == null) return null;
+            SilentOptions o = null;
+            for (int i = 0; i < args.Length; i++)
+            {
+                string a = args[i].ToLowerInvariant();
+                if (a == "/silent" || a == "-silent")
+                {
+                    o = o ?? new SilentOptions();
+                    if (i + 1 < args.Length && !args[i + 1].StartsWith("/")) o.TargetDir = args[++i];
+                }
+            }
+            if (o == null) return null;
+            foreach (string raw in args)
+            {
+                string a = raw.ToLowerInvariant();
+                if (a == "/demo") o.Demo = true;
+                else if (a == "/noocr") o.Ocr = false;
+                else if (a == "/shortcuts") o.Shortcuts = true;
+            }
+            if (string.IsNullOrEmpty(o.TargetDir))
+            {
+                o.TargetDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "IRBY Dental Ledger");
+            }
+            return o;
         }
     }
 
@@ -85,6 +129,17 @@ namespace IrbyDentalInstaller
         private CheckBox _chkStartMenuShortcut;
         private CheckBox _chkKeepDemoData;
         private CheckBox _chkRegisterApp;
+        private CheckBox _chkSetupOcr;
+
+        // OCR scanner (RapidOCR + Keras) Python environment: the official embeddable Python from
+        // python.org is unpacked into <install>\python and the OCR packages are pip-installed into
+        // it, so nothing outside the install folder is touched. server/ocr/autostart.js uses it.
+        private const string PythonEmbedUrl = "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip";
+        private const string GetPipUrl = "https://bootstrap.pypa.io/get-pip.py";
+        private string _ocrStatus = "Skipped (not selected)";
+
+        private readonly SilentOptions _silent;
+        public int ExitCode { get; private set; }
 
         // Step 3 controls
         private Panel _pageInstalling;
@@ -101,8 +156,9 @@ namespace IrbyDentalInstaller
 
         private string _finalInstalledExePath;
 
-        public InstallerForm()
+        public InstallerForm(SilentOptions silent = null)
         {
+            _silent = silent;
             _sourceRoot = ResolveSourceRoot();
 
             Text = "IRBY Dental Ledger — Setup Wizard";
@@ -126,6 +182,36 @@ namespace IrbyDentalInstaller
             BuildFinishPage();
 
             ShowStep(0);
+
+            if (_silent != null)
+            {
+                Opacity = 0;
+                ShowInTaskbar = false;
+                Shown += async (s, e) => await RunSilentAsync();
+            }
+        }
+
+        private async Task RunSilentAsync()
+        {
+            _txtInstallDir.ReadOnly = false;
+            if (_chkPortableHere != null) _chkPortableHere.Checked = false;
+            _txtInstallDir.Text = _silent.TargetDir;
+            _chkDesktopShortcut.Checked = _silent.Shortcuts;
+            _chkStartMenuShortcut.Checked = _silent.Shortcuts;
+            _chkRegisterApp.Checked = _silent.Shortcuts;
+            _chkKeepDemoData.Checked = _silent.Demo;
+            _chkSetupOcr.Checked = _silent.Ocr;
+            _chkLaunchNow.Checked = false;
+            ShowStep(2);
+            bool ok = await RunInstallationAsync();
+            ExitCode = ok ? 0 : 1;
+            try
+            {
+                Directory.CreateDirectory(_silent.TargetDir);
+                File.WriteAllText(Path.Combine(_silent.TargetDir, "install-log.txt"), _txtLog.Text);
+            }
+            catch { }
+            Close();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -269,7 +355,7 @@ namespace IrbyDentalInstaller
 
             Label versionLabel = new Label
             {
-                Text = "v1.0.0 · Offline-First Clinic Edition (AES-256-GCM)",
+                Text = "v1.1.0 · Offline-First Clinic Edition (AES-256-GCM)",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                 ForeColor = ColTextMuted,
                 Location = new Point(20, 24),
@@ -608,6 +694,16 @@ namespace IrbyDentalInstaller
                 Checked = true
             };
 
+            _chkSetupOcr = new CheckBox
+            {
+                Text = "Set up the OCR form scanner (needs internet: about 600 MB, 5–15 min)",
+                Font = new Font("Segoe UI", 9.2f),
+                ForeColor = ColTextMain,
+                Location = new Point(18, 252),
+                Size = new Size(485, 24),
+                Checked = true
+            };
+
             card.Controls.Add(dirLabel);
             card.Controls.Add(_txtInstallDir);
             card.Controls.Add(btnBrowse);
@@ -616,6 +712,7 @@ namespace IrbyDentalInstaller
             card.Controls.Add(_chkStartMenuShortcut);
             card.Controls.Add(_chkKeepDemoData);
             card.Controls.Add(_chkRegisterApp);
+            card.Controls.Add(_chkSetupOcr);
 
             _pageOptions.Controls.Add(heading);
             _pageOptions.Controls.Add(desc);
@@ -826,7 +923,7 @@ namespace IrbyDentalInstaller
             }
         }
 
-        private async Task RunInstallationAsync()
+        private async Task<bool> RunInstallationAsync()
         {
             _isInstalling = true;
             string targetDir = _txtInstallDir.Text.Trim();
@@ -917,8 +1014,23 @@ namespace IrbyDentalInstaller
                 }
                 AppendLog("✓ Node.js v22 LTS engine ready: " + targetNode);
 
+                // Step: settings file. Without .env the app falls back to the demo ("mock") OCR.
+                // An existing .env (reinstall / upgrade) is kept as it is.
+                SetProgress(56, "Writing clinic settings…");
+                string envFile = Path.Combine(targetDir, ".env");
+                string envExample = Path.Combine(targetDir, ".env.example");
+                if (File.Exists(envFile))
+                {
+                    AppendLog("✓ Keeping existing settings file (.env).");
+                }
+                else if (File.Exists(envExample))
+                {
+                    File.Copy(envExample, envFile);
+                    AppendLog("✓ Created settings file (.env) with the RapidOCR scanner switched on.");
+                }
+
                 // Step: Seed demo data if requested and database not yet created
-                SetProgress(72, "Configuring AES-256-GCM encrypted clinic database…");
+                SetProgress(58, "Configuring AES-256-GCM encrypted clinic database…");
                 string dbPath = Path.Combine(targetDir, "data", "irby.db");
                 if (_chkKeepDemoData.Checked && !File.Exists(dbPath) && File.Exists(targetNode))
                 {
@@ -945,11 +1057,22 @@ namespace IrbyDentalInstaller
                 }
                 AppendLog("✓ Encrypted SQLite database & master key verified.");
 
+                // Step: OCR form scanner (Python + RapidOCR + Keras). Never fails the install.
+                if (_chkSetupOcr.Checked)
+                {
+                    _ocrStatus = await SetupOcrAsync(targetDir);
+                }
+                else
+                {
+                    _ocrStatus = "Skipped. To add it later, run this Setup again with the OCR option ticked.";
+                    AppendLog("OCR form scanner set-up skipped.");
+                }
+
                 // Step: Shortcuts & Registry
                 _finalInstalledExePath = Path.Combine(targetDir, "IRBY Dental Ledger.exe");
                 string iconPath = Path.Combine(targetDir, "build", "icon.ico");
 
-                SetProgress(88, "Creating Windows shortcuts…");
+                SetProgress(92, "Creating Windows shortcuts…");
                 if (_chkDesktopShortcut.Checked)
                 {
                     string desktopLnk = Path.Combine(
@@ -983,8 +1106,8 @@ namespace IrbyDentalInstaller
                 _lblFinishSummary.Text =
                     "Installed Location:\n" +
                     "  " + targetDir + "\n\n" +
-                    "Application Executable:\n" +
-                    "  " + _finalInstalledExePath + "\n\n" +
+                    "OCR Form Scanner:\n" +
+                    "  " + _ocrStatus + "\n\n" +
                     (_chkKeepDemoData.Checked
                         ? "Demo Sign-In Accounts:\n" +
                           "  • Administrator:   admin  /  Irby#Clinic-Root26\n" +
@@ -997,20 +1120,195 @@ namespace IrbyDentalInstaller
 
                 _isInstalling = false;
                 ShowStep(3);
+                return true;
             }
             catch (Exception ex)
             {
                 _isInstalling = false;
                 _btnCancel.Enabled = true;
                 AppendLog("ERROR: " + ex.Message);
-                MessageBox.Show(
-                    this,
-                    "An error occurred during installation:\n\n" + ex.Message,
-                    "Installation Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                if (_silent == null)
+                {
+                    MessageBox.Show(
+                        this,
+                        "An error occurred during installation:\n\n" + ex.Message,
+                        "Installation Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+                return false;
             }
+        }
+
+        // ------------------------------------------------------------------ OCR scanner set-up
+
+        /// <summary>
+        /// Puts the OCR's Python in &lt;install&gt;\python: the official embeddable Python 3.12,
+        /// pip, then ocr-model\requirements.txt (RapidOCR, OpenCV, Keras / TensorFlow), and checks
+        /// that the model loads. Returns a one-line status for the finish page; never throws.
+        /// </summary>
+        private async Task<string> SetupOcrAsync(string targetDir)
+        {
+            string pyDir = Path.Combine(targetDir, "python");
+            string pyExe = Path.Combine(pyDir, "python.exe");
+            string requirements = Path.Combine(targetDir, "ocr-model", "requirements.txt");
+            string infer = Path.Combine(targetDir, "ocr-model", "infer.py");
+            const string later = " The rest of the app works. Run this Setup again later (same folder) to finish it.";
+            try
+            {
+                if (!File.Exists(requirements))
+                    return "Not set up: ocr-model folder is missing." + later;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                if (!File.Exists(pyExe))
+                {
+                    SetProgress(60, "Downloading Python 3.12 for the OCR scanner…");
+                    AppendLog("Downloading Python 3.12 (embeddable, 11 MB) from python.org…");
+                    string zip = Path.Combine(targetDir, "python-embed.zip");
+                    await DownloadFileAsync(PythonEmbedUrl, zip, 60, 63, "Downloading Python 3.12");
+                    await Task.Run(() =>
+                    {
+                        if (Directory.Exists(pyDir)) Directory.Delete(pyDir, true);
+                        ZipFile.ExtractToDirectory(zip, pyDir);
+                        File.Delete(zip);
+                        // the embeddable build ignores site-packages until "import site" is enabled
+                        foreach (string pth in Directory.GetFiles(pyDir, "python3*._pth"))
+                        {
+                            string[] lines = File.ReadAllLines(pth);
+                            for (int i = 0; i < lines.Length; i++)
+                                if (lines[i].Trim().StartsWith("#") && lines[i].Contains("import site")) lines[i] = "import site";
+                            File.WriteAllLines(pth, lines);
+                        }
+                    });
+                    AppendLog("✓ Python 3.12 unpacked to " + pyDir);
+                }
+                else
+                {
+                    AppendLog("✓ Reusing Python already in " + pyDir);
+                }
+
+                if (await RunProcessAsync(pyExe, "-m pip --version", targetDir, null) != 0)
+                {
+                    SetProgress(64, "Installing pip…");
+                    string getPip = Path.Combine(pyDir, "get-pip.py");
+                    await DownloadFileAsync(GetPipUrl, getPip, 64, 65, "Downloading pip");
+                    int pipCode = await RunProcessAsync(pyExe,
+                        "\"" + getPip + "\" --no-warn-script-location --disable-pip-version-check", targetDir, AppendLog);
+                    try { File.Delete(getPip); } catch { }
+                    if (pipCode != 0) return "Not set up: pip could not be installed (exit " + pipCode + ")." + later;
+                }
+
+                SetProgress(66, "Installing OCR packages (RapidOCR, OpenCV, TensorFlow)… this takes a while");
+                AppendLog("Installing OCR packages - about 600 MB to download, 5 to 15 minutes…");
+                int collected = 0;
+                int code = await RunProcessAsync(pyExe,
+                    "-m pip install --no-warn-script-location --disable-pip-version-check --progress-bar off -r \"" + requirements + "\"",
+                    targetDir,
+                    line =>
+                    {
+                        if (line.StartsWith("Collecting ") || line.StartsWith("Requirement already satisfied"))
+                        {
+                            collected++;
+                            SetProgress(Math.Min(84, 66 + collected / 3), "Installing OCR packages (" + collected + " checked)…");
+                        }
+                        if (line.StartsWith("Collecting ") || line.StartsWith("Downloading ") || line.StartsWith("Installing ")
+                            || line.StartsWith("Successfully ") || line.StartsWith("ERROR") || line.Contains("error:"))
+                        {
+                            int from = line.IndexOf(" (from ", StringComparison.Ordinal);
+                            AppendLog(from > 0 ? line.Substring(0, from) : line);
+                        }
+                    });
+                if (code != 0) return "Not set up: package install failed (pip exit " + code + "; check the internet connection)." + later;
+
+                SetProgress(86, "Checking that the OCR model loads…");
+                AppendLog("Loading the OCR model once to check it (about 20 s)…");
+                bool ready = false;
+                string detail = "";
+                int healthCode = await RunProcessAsync(pyExe, "\"" + infer + "\" --health", targetDir, line =>
+                {
+                    if (line.TrimStart().StartsWith("{") && line.Contains("\"ready\""))
+                    {
+                        ready = line.Contains("\"ready\": true");
+                        detail = line.Trim();
+                    }
+                });
+                AppendLog(detail.Length > 0 ? detail : "OCR health check exited with code " + healthCode);
+                if (!ready) return "Installed, but the model did not load (see the install log)." + later;
+                AppendLog("✓ OCR form scanner ready.");
+                return "Ready (RapidOCR + Keras document classifier). Starts by itself with the app.";
+            }
+            catch (Exception ex)
+            {
+                AppendLog("OCR set-up stopped: " + ex.Message);
+                return "Not set up: " + ex.Message + later;
+            }
+        }
+
+        private async Task DownloadFileAsync(string url, string target, int pctFrom, int pctTo, string label)
+        {
+            string temp = target + ".download";
+            using (WebClient wc = new WebClient())
+            {
+                wc.DownloadProgressChanged += (s, e) =>
+                {
+                    try
+                    {
+                        BeginInvoke(new Action(() => SetProgress(
+                            pctFrom + (int)(e.ProgressPercentage * (pctTo - pctFrom) / 100.0),
+                            label + " (" + e.ProgressPercentage + "%)…")));
+                    }
+                    catch { }
+                };
+                await wc.DownloadFileTaskAsync(new Uri(url), temp);
+            }
+            if (File.Exists(target)) File.Delete(target);
+            File.Move(temp, target);
+        }
+
+        /// <summary>Runs a console program hidden, passing each output line (stdout and stderr)
+        /// to onLine on the UI thread. Returns the exit code.</summary>
+        private Task<int> RunProcessAsync(string file, string args, string workDir, Action<string> onLine)
+        {
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+            ProcessStartInfo psi = new ProcessStartInfo
+            {
+                FileName = file,
+                Arguments = args,
+                WorkingDirectory = workDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            psi.EnvironmentVariables["PYTHONUTF8"] = "1";
+            psi.EnvironmentVariables["PYTHONUNBUFFERED"] = "1";
+            psi.EnvironmentVariables["PIP_DISABLE_PIP_VERSION_CHECK"] = "1";
+            psi.EnvironmentVariables["TF_CPP_MIN_LOG_LEVEL"] = "3";
+            psi.EnvironmentVariables["TF_ENABLE_ONEDNN_OPTS"] = "0";
+            Process p = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            DataReceivedEventHandler relay = (s, e) =>
+            {
+                if (e.Data == null || onLine == null) return;
+                string line = e.Data.TrimEnd();
+                if (line.Length == 0) return;
+                try { BeginInvoke(new Action(() => onLine(line))); } catch { }
+            };
+            p.OutputDataReceived += relay;
+            p.ErrorDataReceived += relay;
+            p.Exited += (s, e) =>
+            {
+                try { p.WaitForExit(); } catch { }
+                int code = -1;
+                try { code = p.ExitCode; } catch { }
+                // let the queued output lines reach the log before the caller continues
+                try { BeginInvoke(new Action(() => tcs.TrySetResult(code))); } catch { tcs.TrySetResult(code); }
+                p.Dispose();
+            };
+            p.Start();
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+            return tcs.Task;
         }
 
         private void SetProgress(int percent, string status)
@@ -1086,7 +1384,7 @@ namespace IrbyDentalInstaller
                     {
                         BeginInvoke(new Action(() =>
                         {
-                            SetProgress(48 + (int)(e.ProgressPercentage * 0.22), "Downloading Node.js v22 LTS runtime (" + e.ProgressPercentage + "%)…");
+                            SetProgress(48 + (int)(e.ProgressPercentage * 0.07), "Downloading Node.js v22 LTS runtime (" + e.ProgressPercentage + "%)…");
                         }));
                     }
                     catch { }
@@ -1155,7 +1453,7 @@ namespace IrbyDentalInstaller
                     if (key != null)
                     {
                         key.SetValue("DisplayName", "IRBY Dental Ledger");
-                        key.SetValue("DisplayVersion", "1.0.0");
+                        key.SetValue("DisplayVersion", "1.1.0");
                         key.SetValue("Publisher", "IRBY Dental Clinic");
                         key.SetValue("InstallLocation", installDir);
                         key.SetValue("DisplayIcon", File.Exists(iconPath) ? iconPath : exePath);

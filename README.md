@@ -30,6 +30,16 @@ It implements the SRS (CPECAPS DOCS) and the Group 6 Test Plan on top of the ini
 
 ## 1. Quick start
 
+### Windows installer (clinic PCs)
+
+Double-click **`IRBY Dental Ledger Setup.exe`** and follow the wizard. It installs the app with its own Node.js, creates the settings file, can add the demo accounts, and (ticked by default) sets up the **OCR form scanner**: it downloads Python 3.12 and the OCR packages (about 600 MB, 5–15 minutes, needs internet) into the install folder, so nothing else on the PC changes. If that step fails or is skipped, the rest of the app works; run the Setup again on the same folder to finish it. Uninstall from *Settings → Apps* deletes the install folder (patient data in its `data` folder included, so back it up first).
+
+Unattended install (IT / testing): `"IRBY Dental Ledger Setup.exe" /silent "C:\IRBY Dental Ledger" [/demo] [/noocr] [/shortcuts]` writes `install-log.txt` in the folder and exits with 0 on success.
+
+To rebuild both `.exe` files after changing the code (Windows, after `npm install`): `node scripts/build-win-app.js`. It packs only production dependencies and refuses to produce a Setup over 95 MB (GitHub's file limit is 100 MB).
+
+### From source
+
 **Requirements:** Windows 10+ (or macOS/Linux) and **Node.js 22.13 or newer** (it uses Node's built-in SQLite, so there are no native modules to compile). Python is optional and only needed for a Python OCR model.
 
 ```bash
@@ -135,9 +145,9 @@ Photo view types and the default numbering are set in `config/clinic.json`.
 The Intake screen's **Scan Paper Form (OCR)** reads the paper **Philippine Dental Association (PDA) Dental Chart — Patient Information Record** and fills the Intake form: the patient's details, dental history, physician, the circled `Yes/No` answers with their *If so* details, circled `Sex (M/F)`, and the Q8 allergy and Q13 condition checklists. It works on flatbed scans and on phone photos (the page is found and flattened, turned upright and de-skewed), separates the patient's pen ink from the printed form, and pairs each handwritten answer with its printed label. `ocr-model/doc_classifier_frozen_easyocr.keras` with `doc_class_names.json` labels the image `document / form / invoice / real_life`. Every filled field is highlighted, marked **Auto-filled · confidence %** (values the model is unsure of also say **check**), and must be **edited or confirmed** before *Save* is allowed (NFR-S5). The scanned image is never stored.
 
 ### Automatic sidecar startup
-When `OCR_PROVIDER=http` targets `127.0.0.1` / `localhost` (default in `.env`), **IRBY Dental Ledger automatically starts `ocr-model/server.py` silently in the background** when the app opens and stops it cleanly on exit (`server/ocr/autostart.js`). It uses the Python environment in `ocr-model/.venv`. Clinic staff never need to launch a separate terminal or script.
+When `OCR_PROVIDER=http` targets `127.0.0.1` / `localhost` (default in `.env`), **IRBY Dental Ledger automatically starts `ocr-model/server.py` silently in the background** when the app opens and stops it cleanly on exit (`server/ocr/autostart.js`). It uses the Python environment in `ocr-model/.venv`, or the `python` folder that the Windows installer sets up. Clinic staff never need to launch a separate terminal or script.
 
-Set up that environment once on the clinic PC (Python 3.10 – 3.12):
+With the Windows installer this is done for you. When running from source, set up that environment once on the clinic PC (Python 3.10 – 3.12):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ocr-model\setup-ocr.ps1

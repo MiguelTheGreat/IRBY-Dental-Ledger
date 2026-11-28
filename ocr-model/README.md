@@ -13,7 +13,11 @@ registration form. Staff must review every auto-filled field before saving (NFR-
 
 ## Setup (once per clinic PC)
 
-Python 3.10 to 3.12 is needed. From the project folder:
+**Installed with `IRBY Dental Ledger Setup.exe`:** nothing to do. The installer's OCR option puts the
+official embeddable Python 3.12 in `<install folder>\python`, installs `requirements.txt` into it and
+checks the model loads; `server/ocr/autostart.js` uses that interpreter.
+
+**Running from source:** Python 3.10 to 3.12 is needed. From the project folder:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ocr-model\setup-ocr.ps1
