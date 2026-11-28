@@ -429,7 +429,7 @@ body.locked .app-shell { visibility: hidden; }
 }
 .stat-card:hover { transform: translateY(-2px); }
 .stat-card.priority-highlight { border-color: var(--brown-200); background: linear-gradient(180deg, #FFFFFF 0%, #FCF9F5 100%); }
-.stat-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.stat-top { display: flex; justify-content: space-between; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
 .stat-label { color: var(--text-secondary); font-size: 12.5px; font-weight: 700; }
 .stat-value { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
 .stat-value.name { font-size: 20px; margin: 11px 0 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -539,7 +539,23 @@ textarea.input { min-height: 72px; resize: vertical; line-height: 1.45; }
 .table tbody tr:hover td { background: var(--bg-subtle); }
 .table tbody tr.clickable { cursor: pointer; }
 .table tbody tr.selected td { background: var(--brown-100); }
-.table .actions { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
+.table .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* A table in a narrow column (e.g. the ledger's Payment History beside the entry form) uses
+   the same stacked card layout as phones, whatever the screen width. */
+.table-wrap { container-type: inline-size; }
+@container (max-width: 600px) {
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tbody tr { background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--r-lg); padding: 10px 12px; margin-bottom: 10px; }
+  .table td { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; text-align: right; }
+  .table td:last-child { border-bottom: none; padding-top: 10px; }
+  .table td::before { content: attr(data-label); font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); text-align: left; margin-right: 12px; }
+  .table tbody tr:hover td { background: transparent; }
+}
+
+/* glyph icons inside buttons ('↻', '↓') get the button's own icon gap */
+.btn-ico { display: inline-block; line-height: 1; }
 .td-person { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .td-person .avatar { width: 32px; height: 32px; border-radius: 9px; font-size: 11px; }
 .table-foot { display: flex; justify-content: center; padding-top: 12px; }
@@ -761,8 +777,8 @@ details.more summary::-webkit-details-marker { display: none; }
 .dock-indicator::before { content: ''; position: absolute; inset: 0 2px; border-radius: 18px; background: var(--brown-800); box-shadow: 0 4px 12px rgba(62, 47, 39, 0.22); }
 .dock-btn {
   position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  min-width: 0; height: 100%; padding: 0; border: none; background: none; color: var(--text-secondary); font-size: 10px;
-  font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color 0.25s var(--ease-fluid);
+  min-width: 0; height: 100%; padding: 0; border: none; background: none; color: var(--text-secondary); font-size: 9.5px;
+  letter-spacing: -0.015em; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color 0.25s var(--ease-fluid);
 }
 .dock-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.1; fill: none; flex-shrink: 0; }
 .dock-btn.active { color: #FFFFFF; }

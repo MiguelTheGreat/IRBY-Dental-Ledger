@@ -99,15 +99,15 @@ function renderEmpty() {
   root.innerHTML = String(html`
     <div class="view-header"><div><h2>Dental Chart</h2><p>Select a patient to view or chart their teeth.</p></div></div>
     <div class="card"><div class="empty-state"><span class="icon">🦷</span><h3>No patient selected</h3>
-      <p>Choose a patient from the directory or with "Switch Patient" above.</p>
-      <button class="btn-primary" data-action="go-directory">Open Patient Directory</button></div></div>`);
+      <p>Choose a patient from the patient list or with "Find patient" above.</p>
+      <button class="btn-primary" data-action="go-directory">Open patient list</button></div></div>`);
 }
 
 // ------------------------------------------------------------------ rendering
 function render() {
   const canEdit = editable();
   root.innerHTML = String(html`
-    ${canEdit ? '' : html`<div class="rbac-alert"><span>🔒 <strong>View-only:</strong> ${state.user.roleLabel} accounts cannot edit clinical charts (requests are rejected with HTTP 403).</span></div>`}
+    ${canEdit ? '' : html`<div class="rbac-alert"><span>🔒 <strong>View-only:</strong> ${state.user.roleLabel} accounts cannot edit clinical charts.</span></div>`}
     <div class="view-header">
       <div>
         <h2>Dental Chart</h2>
@@ -122,8 +122,8 @@ function render() {
       </div>
     </div>
     <div class="tabs" role="tablist">
-      <button type="button" class="tab ${S.mode === 'odontogram' ? 'active' : ''}" data-chart-mode="odontogram" role="tab">Dental Record Chart</button>
-      <button type="button" class="tab ${S.mode === 'photos' ? 'active' : ''}" data-chart-mode="photos" role="tab">Intraoral Photos (${S.photos.length})</button>
+      <button type="button" class="tab ${S.mode === 'odontogram' ? 'active' : ''}" data-chart-mode="odontogram" role="tab">Dental record chart</button>
+      <button type="button" class="tab ${S.mode === 'photos' ? 'active' : ''}" data-chart-mode="photos" role="tab">Intraoral photos (${S.photos.length})</button>
     </div>
     ${S.mode === 'odontogram' ? html`
       <div class="card odonto-sheet" id="odonto-card">
@@ -143,7 +143,7 @@ function render() {
           <div class="card-top">
             <div><h3>Intraoral Photos</h3><span class="card-sub">${S.photos.length} photo${S.photos.length === 1 ? '' : 's'} · ${S.marks.length} finding${S.marks.length === 1 ? '' : 's'}</span></div>
             ${canEdit ? html`<div class="row">
-              <button class="btn-secondary tall" data-action="photo-camera">📷 Take photo</button>
+              <button class="btn-secondary tall" data-action="photo-camera">Take photo</button>
               <button class="btn-secondary tall" data-action="photo-upload">Upload</button></div>` : ''}
           </div>
           <div id="photo-strip-wrap">${photoStrip()}</div>
@@ -222,7 +222,7 @@ function stage() {
     return editable()
       ? html`<div class="dropzone"><span style="font-size:34px;">📸</span><h3>Add the patient's intraoral photos</h3>
           <p>Drag &amp; drop, paste (Ctrl+V), take a photo with the tablet camera, or upload from the intraoral camera's folder.</p>
-          <div class="row" style="justify-content:center;"><button class="btn-primary" data-action="photo-camera">📷 Take photo</button><button class="btn-secondary tall" data-action="photo-upload">Upload photos</button></div>
+          <div class="row" style="justify-content:center;"><button class="btn-primary" data-action="photo-camera">Take photo</button><button class="btn-secondary tall" data-action="photo-upload">Upload photos</button></div>
           <p class="small muted">You can also record findings without a photo: pick a tooth and a condition on the right.</p></div>`
       : html`<div class="dropzone"><span style="font-size:34px;">🖼</span><h3>No photos yet</h3><p>The dentist has not added intraoral photos for this patient.</p></div>`;
   }

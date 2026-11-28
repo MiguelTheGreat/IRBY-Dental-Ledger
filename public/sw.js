@@ -1,6 +1,6 @@
 // Service worker: caches the app shell so the UI loads instantly on clinic
 // tablets. API responses (patient data) are never cached.
-const CACHE = 'irby-shell-v1';
+const CACHE = 'irby-shell-v2';
 const SHELL = [
   '/', '/index.html', '/print.html', '/css/app.css', '/css/fonts.css', '/css/print.css', '/manifest.webmanifest', '/icons/icon.svg',
   '/js/app.js', '/js/api.js', '/js/ui.js', '/js/state.js', '/js/camera.js', '/js/teeth.js', '/js/symbols.js', '/js/money.js', '/js/print.js',
