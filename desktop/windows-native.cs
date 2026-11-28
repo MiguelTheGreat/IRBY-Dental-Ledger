@@ -23,8 +23,8 @@ using Microsoft.Web.WebView2.WinForms;
 [assembly: AssemblyDescription("Digital Dental Chart & Records Management System")]
 [assembly: AssemblyCompany("IRBY Dental Clinic")]
 [assembly: AssemblyProduct("IRBY Dental Ledger")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 namespace IrbyDentalLedger
 {
@@ -1216,7 +1216,7 @@ namespace IrbyDentalLedger
         {
             MessageBox.Show(
                 this,
-                "IRBY Dental Ledger v1.0.0\n" +
+                "IRBY Dental Ledger v1.1.0\n" +
                 "Digital Dental Chart & Records Management System\n\n" +
                 "• Offline-first single-clinic records & AES-256-GCM encrypted SQLite database\n" +
                 "• Photo dental chart with PDA symbology (FDI & Universal numbering)\n" +
@@ -1233,7 +1233,24 @@ namespace IrbyDentalLedger
             {
                 if (_serverProcess != null && !_serverProcess.HasExited)
                 {
-                    _serverProcess.Kill();
+                    // Kill the whole tree: the server's OCR sidecar (python ocr-model/server.py,
+                    // ~1 GB with TensorFlow loaded) would otherwise keep running after the window closes.
+                    bool treeKilled = false;
+                    try
+                    {
+                        using (Process tk = Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "taskkill.exe",
+                            Arguments = "/PID " + _serverProcess.Id + " /T /F",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }))
+                        {
+                            treeKilled = tk != null && tk.WaitForExit(5000);
+                        }
+                    }
+                    catch { }
+                    if (!treeKilled && !_serverProcess.HasExited) _serverProcess.Kill();
                     _serverProcess.Dispose();
                     _serverProcess = null;
                 }
