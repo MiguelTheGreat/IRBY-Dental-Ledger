@@ -229,8 +229,8 @@ function renderDiagnosticsHtml(data) {
           </div>
         </div>
         <div class="row" style="gap:8px;">
-          <button type="button" class="btn-primary" data-action="diag-selftest">Run Self-Test</button>
-          <button type="button" class="btn-secondary tall" data-action="diag-log">Download Log</button>
+          <button type="button" class="btn-primary" data-action="diag-selftest">Run self-test</button>
+          <button type="button" class="btn-secondary tall" data-action="diag-log">Download log</button>
         </div>
       </div>
 
@@ -305,7 +305,7 @@ async function renderUsers(panel) {
       <tbody>${users.map((u) => html`<tr>
         <td data-label="User"><strong>${u.displayName}</strong><div class="muted small">${u.username}</div></td>
         <td data-label="Role">${u.roleLabel}</td>
-        <td data-label="Status">${!u.active ? html`<span class="badge">Inactive</span>` : u.lockedUntil ? html`<span class="badge red">Locked until ${fmt.dateTime(u.lockedUntil).slice(11)}</span>` : html`<span class="badge green">Active</span>`}</td>
+        <td data-label="Status">${!u.active ? html`<span class="badge">Inactive</span>` : u.lockedUntil ? html`<span class="badge red">Locked until ${fmt.timeOf(u.lockedUntil)}</span>` : html`<span class="badge green">Active</span>`}</td>
         <td data-label="Actions"><div class="actions">
           ${u.lockedUntil ? html`<button class="btn-secondary" data-unlock="${u.id}">Unlock</button>` : ''}
           <button class="btn-secondary" data-reset="${u.id}">Reset password</button>
@@ -344,7 +344,7 @@ async function renderTrash(panel) {
         <td data-label="Patient"><strong>${i.patientName}</strong><div class="muted small num">${i.patientId}</div></td>
         <td data-label="Item">${i.summary}</td>
         <td data-label="Deleted" class="num">${fmt.dateTime(i.deletedAt)}<div class="muted small">${i.deletedBy || ''}</div></td>
-        <td data-label="Purged on" class="num">${fmt.dateTime(i.purgeOn).slice(0, 10)}</td>
+        <td data-label="Purged on" class="num">${fmt.dayOf(i.purgeOn)}</td>
         <td data-label="Actions">${can('trash.restore') ? html`<button class="btn-secondary" data-restore="${i.type}" data-id="${i.id}">Restore</button>` : ''}</td></tr>`)}</tbody></table></div>`
     : html`<div class="empty-state"><span class="icon">🗑</span><p>Nothing has been deleted recently.</p></div>`}
   </div>`);
@@ -355,7 +355,7 @@ async function renderData(panel) {
   const admin = can('backup.manage');
   const b = admin ? await get('/backups') : null;
   panel.innerHTML = String(html`<div class="bento-2">
-    <div class="card"><div class="card-top"><h3>Export</h3><span class="badge warm">NFR-PO2</span></div>
+    <div class="card"><div class="card-top"><h3>Export</h3></div>
       <p class="card-sub" style="margin-bottom:12px;">Full patient data as JSON (re-importable, includes photos) or CSV for spreadsheets. Exports contain personal health information — store them securely.</p>
       <div class="grid-2">
         <button class="btn-secondary tall" data-export="/export/full.json">Full export (JSON)</button>

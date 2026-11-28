@@ -52,7 +52,7 @@ DETAILS = [
 ALLERGY_ITEMS = [
     ("localAnesthetic", "Local Anesthetic (ex. Lidocaine)", ["local anesthetic", "lidocaine"]),
     ("penicillin", "Penicillin / Antibiotics", ["penicillin", "antibiotics"]),
-    ("sulfaDrugs", "Sulfa drugs", ["sulfa drugs", "sulfa"]),
+    ("sulfaDrugs", "Sulfa Drugs", ["sulfa drugs", "sulfa"]),
     ("aspirin", "Aspirin", ["aspirin"]),
     ("latex", "Latex", ["latex"]),
     ("other", "Other", ["other", "others"]),
