@@ -35,7 +35,7 @@ function renderEmpty() {
   root.innerHTML = String(html`
     <div class="view-header"><div><h2>Treatment &amp; Financial Ledger</h2><p>Select a patient to record treatments and payments.</p></div></div>
     <div class="card"><div class="empty-state"><span class="icon">₱</span><h3>No patient selected</h3>
-      <button class="btn-primary" data-action="go-directory">Open Patient Directory</button></div></div>`);
+      <button class="btn-primary" data-action="go-directory">Open patient list</button></div></div>`);
 }
 
 async function load() {
@@ -55,7 +55,7 @@ function renderAll() {
   root.innerHTML = String(html`
     <div class="view-header">
       <div><h2>Treatment &amp; Financial Ledger</h2><p>Record chairside procedures, calculate exact balances, and schedule return visits.</p></div>
-      <div class="view-actions"><button class="btn-secondary tall" data-action="print">Export Ledger PDF</button></div>
+      <div class="view-actions"><button class="btn-secondary tall" data-action="print">Export ledger PDF</button></div>
     </div>
     <div class="bento-2">
       <div class="stack">
@@ -91,14 +91,14 @@ function formHtml() {
     </div>
     <div class="ledger-note" id="ledger-note" aria-live="polite"></div>
     ${e ? '' : html`
-      <div class="subhead">Next return visit (FR-6)</div>
+      <div class="subhead">Next return visit</div>
       <div class="grid-3">
         <div class="field"><div class="field-label"><span>Return date</span></div><input type="date" class="input num" name="returnDate" min="${today}" /><div class="field-error"></div></div>
         <div class="field"><div class="field-label"><span>Time</span></div><input type="time" class="input num" name="returnTime" /><div class="field-error"></div></div>
         <div class="field"><div class="field-label"><span>Reason</span></div><input class="input" name="returnReason" placeholder="Follow-up procedure" maxlength="200" /><div class="field-error"></div></div>
       </div>
       ${dueCount ? html`<label class="check-row"><input type="checkbox" name="completeFollowUps" checked /> Mark ${dueCount} due follow-up${dueCount === 1 ? '' : 's'} as completed (patient came in)</label>` : ''}`}
-    <button class="btn-primary" type="submit" style="width:100%;" id="ledger-save">${e ? 'Save Changes' : 'Save Entry & Schedule Return'}</button>`;
+    <button class="btn-primary" type="submit" style="width:100%;" id="ledger-save">${e ? 'Save changes' : 'Save entry & schedule return'}</button>`;
 }
 
 function historyHtml() {
