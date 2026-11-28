@@ -489,6 +489,7 @@ textarea.input { min-height: 72px; resize: vertical; line-height: 1.45; }
   font-weight: 800; padding: 2px 8px; cursor: pointer; min-height: 22px;
 }
 .af-tag.ok { color: var(--green-main); background: var(--green-soft); border-color: #BFE3D4; padding-right: 8px; }
+.af-tag.check { color: var(--amber-main); background: var(--amber-soft); border-color: #F6D8B8; }
 
 .btn-primary {
   min-height: var(--tap); padding: 10px 20px; border-radius: var(--r-lg); background: var(--brown-800);

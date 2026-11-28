@@ -1,8 +1,15 @@
-# IRBY Dental Ledger OCR Model dependencies
-# Used by ocr-model/server.py (OCR_PROVIDER=http) and ocr-model/infer.py (OCR_PROVIDER=command)
-easyocr>=1.7.0
+# IRBY Dental Ledger OCR model dependencies
+# Used by ocr-model/server.py (OCR_PROVIDER=http) and ocr-model/infer.py (OCR_PROVIDER=command).
+# Python 3.10 - 3.12. Install into ocr-model/.venv with ocr-model/setup-ocr.ps1 (Windows)
+# or ocr-model/setup-ocr.sh (macOS / Linux); the app starts that interpreter automatically.
+
+# Text detection + recognition: PP-OCRv4 models on onnxruntime (CPU, no PyTorch)
+rapidocr_onnxruntime>=1.3.24,<2
+onnxruntime>=1.17
+# Document classifier (doc_classifier_frozen_easyocr.keras + doc_class_names.json)
 keras>=3.0.0
 tensorflow>=2.16.0
+# Scanning, ink analysis
 opencv-python>=4.9.0
-pillow>=10.0.0
 numpy>=1.26.0
+pillow>=10.0.0

@@ -45,7 +45,7 @@ def _load_in_background():
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "IrbyOCR/1.1"
+    server_version = "IrbyOCR/2.0"
 
     def _send(self, status, payload):
         body = json.dumps(payload).encode("utf-8")
@@ -61,7 +61,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {
                     "ready": False,
                     "starting": True,
-                    "detail": "Loading Keras Doc Classifier + EasyOCR…",
+                    "detail": "Loading RapidOCR + Keras document classifier…",
                 })
             ok, detail = model.ready()
             return self._send(200, {"ready": ok, "starting": False, "detail": detail})
